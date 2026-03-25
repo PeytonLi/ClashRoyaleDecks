@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node / Next.js
+client/node_modules/
+client/.next/
+client/out/
+client/build/
+client/.vercel/
+
+# Python / FastAPI
+server/__pycache__/
+server/*.py[cod]
+server/*$py.class
+server/.pytest_cache/
+server/.coverage
+server/htmlcov/
+server/venv/
+server/env/
+server/.venv/
+server/Pipfile.lock
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.venv
+
+# Model Artifacts (usually large and generated locally)
+*.pkl
+server/app/ml/artifacts/*.pkl
+
+# OS / Editor Files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# AI Agent folders
+.claude/
+.gemini/
+.cursor/

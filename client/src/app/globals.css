@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-red: #e63946;
+  --color-brand-red-dark: #c1121f;
+  --color-brand-purple: #7b2d8e;
+  --color-brand-blue: #457b9d;
+  --color-brand-blue-dark: #1d3557;
+  --color-brand-blue-deep: #0f1b2d;
+
+  --color-surface-primary: #0a0f1a;
+  --color-surface-card: rgba(255, 255, 255, 0.04);
+  --color-surface-card-hover: rgba(255, 255, 255, 0.08);
+  --color-surface-elevated: rgba(255, 255, 255, 0.06);
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-accent: rgba(230, 57, 70, 0.3);
+
+  --color-accent-green: #22c55e;
+  --color-accent-yellow: #eab308;
+  --color-accent-orange: #f97316;
+}
+
+/* ============================
+   Base styles
+   ============================ */
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+/* ============================
+   Gradient backgrounds
+   ============================ */
+
+.bg-gradient-hero {
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-red) 0%,
+    var(--color-brand-purple) 35%,
+    var(--color-brand-blue) 65%,
+    var(--color-brand-blue-dark) 100%
+  );
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(
+    135deg,
+    rgba(230, 57, 70, 0.08) 0%,
+    rgba(123, 45, 142, 0.06) 35%,
+    rgba(69, 123, 157, 0.08) 65%,
+    rgba(29, 53, 87, 0.1) 100%
+  );
+}
+
+.bg-gradient-card {
+  background: linear-gradient(
+    145deg,
+    rgba(230, 57, 70, 0.06) 0%,
+    rgba(69, 123, 157, 0.04) 100%
+  );
+}
+
+.bg-gradient-navbar {
+  background: linear-gradient(
+    90deg,
+    rgba(10, 15, 26, 0.95) 0%,
+    rgba(15, 20, 35, 0.95) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ============================
+   Glass morphism cards
+   ============================ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(230, 57, 70, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(230, 57, 70, 0.08), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================
+   Gradient text
+   ============================ */
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-brand-red) 0%, var(--color-brand-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-subtle {
+  background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================
+   Buttons
+   ============================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-brand-red) 0%, var(--color-brand-purple) 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(230, 57, 70, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(230, 57, 70, 0.4);
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(230, 57, 70, 0.3);
+}
+
+/* ============================
+   Input styles
+   ============================ */
+
+.input-field {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.75rem;
+  color: var(--color-text-primary);
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  outline: none;
+  width: 100%;
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-field:focus {
+  border-color: var(--color-brand-red);
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ============================
+   Archetype badges
+   ============================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-cycle {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.badge-beatdown {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+.badge-bridge_spam, .badge-bridge-spam {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.25);
+}
+
+.badge-control {
+  background: rgba(69, 123, 157, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(69, 123, 157, 0.3);
+}
+
+.badge-bait {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+/* ============================
+   Score bar
+   ============================ */
+
+.score-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-brand-red), var(--color-brand-blue));
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================
+   Animations
+   ============================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(230, 57, 70, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(230, 57, 70, 0.2); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation: fadeInUp 0.6s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.6s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-3 {
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ============================
+   Scrollbar
+   ============================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

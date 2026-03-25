@@ -1,0 +1,22 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.9.0
+python-dotenv==1.0.1
+httpx==0.27.0
+
+# ML dependencies
+numpy==2.1.0
+scikit-learn==1.5.0
+pandas==2.3.0
+
+# Database
+sqlalchemy[asyncio]==2.0.35
+asyncpg==0.29.0
+alembic==1.13.1
+
+# Scheduling
+apscheduler==3.10.4
+
+# Data processing
+beautifulsoup4==4.12.3
+lxml==5.2.2

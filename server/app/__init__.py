@@ -1,0 +1,1 @@
+# Clash Royale Decks API
