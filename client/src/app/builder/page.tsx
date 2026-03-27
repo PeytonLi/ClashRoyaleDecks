@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Navbar from "../../components/Navbar";
 import { Card } from '../../types/card';
 
@@ -113,7 +113,7 @@ export default function BuilderPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+      <main className="grow p-4 md:p-8 max-w-7xl mx-auto w-full">
         <h1 className="text-3xl font-bold mb-6 text-center">Deck Builder</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -141,11 +141,10 @@ export default function BuilderPage() {
                     <div className="font-medium text-sm">{card.name}</div>
                     <div className="text-xs text-gray-500">{card.elixir} ⚡</div>
                     <div className="text-xs mt-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        card.rarity === 'Common' ? 'bg-gray-200' :
-                        card.rarity === 'Rare' ? 'bg-silver-200' :
-                        card.rarity === 'Epic' ? 'bg-purple-200' : 'bg-orange-200'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${card.rarity === 'Common' ? 'bg-gray-200' :
+                          card.rarity === 'Rare' ? 'bg-silver-200' :
+                            card.rarity === 'Epic' ? 'bg-purple-200' : 'bg-orange-200'
+                        }`}>
                         {card.rarity}
                       </span>
                     </div>
@@ -158,11 +157,10 @@ export default function BuilderPage() {
               <button
                 onClick={getRecommendations}
                 disabled={loading || selectedCards.length === 0}
-                className={`px-6 py-2 rounded-lg font-medium ${
-                  loading || selectedCards.length === 0
+                className={`px-6 py-2 rounded-lg font-medium ${loading || selectedCards.length === 0
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                  }`}
               >
                 {loading ? 'Getting Recommendations...' : 'Get Recommendations'}
               </button>
@@ -223,20 +221,18 @@ export default function BuilderPage() {
               {availableCards.map((card) => (
                 <div
                   key={card.id}
-                  className={`border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 ${
-                    selectedCards.length >= 8 ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  className={`border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 ${selectedCards.length >= 8 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   onClick={() => selectedCards.length < 8 && handleSelectCard(card)}
                 >
                   <div>
                     <div className="font-medium">{card.name}</div>
                     <div className="text-xs text-gray-500">{card.elixir} ⚡ • {card.type}</div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    card.rarity === 'Common' ? 'bg-gray-200' :
-                    card.rarity === 'Rare' ? 'bg-silver-200' :
-                    card.rarity === 'Epic' ? 'bg-purple-200' : 'bg-orange-200'
-                  }`}>
+                  <span className={`px-2 py-1 rounded-full text-xs ${card.rarity === 'Common' ? 'bg-gray-200' :
+                      card.rarity === 'Rare' ? 'bg-silver-200' :
+                        card.rarity === 'Epic' ? 'bg-purple-200' : 'bg-orange-200'
+                    }`}>
                     {card.rarity}
                   </span>
                 </div>

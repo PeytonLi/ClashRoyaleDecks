@@ -111,7 +111,7 @@ function ResultsContent() {
           <p className="text-text-secondary mb-8">
             You&apos;ve used all 3 free recommendations. Upgrade to unlock unlimited access.
           </p>
-          <Link href="/payment" className="btn-primary text-lg !py-3.5 !px-10">
+          <Link href="/payment" className="btn-primary text-lg py-3.5! px-10!">
             Upgrade Now
           </Link>
           <div className="mt-4">

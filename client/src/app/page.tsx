@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Navbar from "../components/Navbar";
-import { Swords, Sparkles, Shield, TrendingUp } from "lucide-react";
+import { Swords, Sparkles, Shield } from "lucide-react";
 
 export default function Home() {
   return (
@@ -33,10 +33,10 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/recommend" className="btn-primary text-lg !py-3.5 !px-10">
+              <Link href="/recommend" className="btn-primary text-lg py-3.5! px-10!">
                 Get Your Decks — Free
               </Link>
-              <Link href="/about" className="btn-secondary text-lg !py-3.5 !px-10">
+              <Link href="/about" className="btn-secondary text-lg py-3.5! px-10!">
                 How It Works
               </Link>
             </div>
@@ -150,7 +150,7 @@ export default function Home() {
           <p className="text-text-secondary text-lg mb-8 max-w-xl mx-auto">
             Get personalized recommendations tailored to your exact card collection.
           </p>
-          <Link href="/recommend" className="btn-primary text-lg !py-3.5 !px-10">
+          <Link href="/recommend" className="btn-primary text-lg py-3.5! px-10!">
             Get Started
           </Link>
         </div>
