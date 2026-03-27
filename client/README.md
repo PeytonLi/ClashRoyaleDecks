@@ -5,8 +5,8 @@ Frontend for the Clash Royale Deck Recommender.
 ## Local Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 The app runs on `http://localhost:3000` and communicates with backend proxy routes under `src/app/api`.
@@ -14,10 +14,10 @@ The app runs on `http://localhost:3000` and communicates with backend proxy rout
 ## Useful Scripts
 
 ```bash
-npm run dev      # start dev server
-npm run build    # production build
-npm run start    # run production build
-npm run lint     # lint checks
+pnpm dev      # start dev server
+pnpm build    # production build
+pnpm start    # run production build
+pnpm lint     # lint checks
 ```
 
 ## Key Paths

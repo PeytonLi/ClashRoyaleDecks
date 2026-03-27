@@ -23,8 +23,8 @@ docker compose up -d --build
 ### 2. Run frontend
 ```bash
 cd client
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ### 3. Backend local dev (optional, without Docker API)
