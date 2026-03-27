@@ -3,6 +3,7 @@ SQLAlchemy ORM models for the Clash Royale Deck Recommender.
 """
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy import (
     ARRAY,
@@ -32,7 +33,7 @@ class Card(Base):
     rarity: Mapped[str] = mapped_column(String(20), nullable=False, comment="common, rare, epic, legendary, champion")
     card_type: Mapped[str] = mapped_column(String(30), nullable=False, comment="troop, spell, building")
     arena_unlock: Mapped[int] = mapped_column(Integer, default=0, comment="Arena number where card unlocks")
-    icon_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    icon_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     max_level: Mapped[int] = mapped_column(Integer, default=14)
 
     def __repr__(self) -> str:
@@ -47,13 +48,13 @@ class MetaDeck(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     deck_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, comment="SHA256 of sorted card keys for dedup")
     card_keys: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, comment="Array of 8 card sc_keys")
-    archetype: Mapped[str | None] = mapped_column(String(30), nullable=True, comment="cycle, beatdown, bridge_spam, control, bait")
+    archetype: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, comment="cycle, beatdown, bridge_spam, control, bait")
     win_rate: Mapped[float] = mapped_column(Float, default=0.0)
     usage_rate: Mapped[float] = mapped_column(Float, default=0.0)
     avg_elixir: Mapped[float] = mapped_column(Float, default=0.0)
     trophy_range_low: Mapped[int] = mapped_column(Integer, default=0)
     trophy_range_high: Mapped[int] = mapped_column(Integer, default=9000)
-    season: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="e.g. '2026-03'")
+    season: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="e.g. '2026-03'")
     source: Mapped[str] = mapped_column(String(30), default="unknown", comment="royaleapi, ladder, kaggle, manual")
     sample_size: Mapped[int] = mapped_column(Integer, default=0, comment="Number of games this deck was observed in")
     scraped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -109,7 +110,7 @@ class CardSynergy(Base):
     synergy_score: Mapped[float] = mapped_column(Float, default=0.0, comment="Normalized co-occurrence score weighted by win rate")
     co_occurrence_count: Mapped[int] = mapped_column(Integer, default=0, comment="Number of decks containing both cards")
     avg_win_rate: Mapped[float] = mapped_column(Float, default=0.0, comment="Avg win rate of decks containing both cards")
-    season: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    season: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (

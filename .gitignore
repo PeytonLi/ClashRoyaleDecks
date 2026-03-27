@@ -16,10 +16,11 @@ client/.vercel/
 server/__pycache__/
 server/*.py[cod]
 server/*$py.class
+server/**/*.py[cod]
+server/**/__pycache__/
 server/.pytest_cache/
 server/.coverage
 server/htmlcov/
-server/venv/
 server/env/
 server/.venv/
 server/Pipfile.lock
@@ -28,6 +29,7 @@ server/Pipfile.lock
 .env
 .env.*
 !.env.example
+server/.env.test
 *.pem
 *.key
 .venv

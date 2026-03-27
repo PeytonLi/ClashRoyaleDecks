@@ -3,6 +3,7 @@ Archetype classifier for Clash Royale decks.
 
 Rules-based classifier that tags decks as: cycle, beatdown, bridge_spam, control, bait.
 """
+from typing import Optional
 
 # Cards strongly associated with each archetype
 BEATDOWN_TANKS = {
@@ -56,7 +57,7 @@ DEFAULT_ELIXIR: dict[str, int] = {
 }
 
 
-def compute_avg_elixir(card_keys: list[str], elixir_lookup: dict[str, int] | None = None) -> float:
+def compute_avg_elixir(card_keys: list[str], elixir_lookup: Optional[dict[str, int]] = None) -> float:
     """Compute average elixir cost of a deck."""
     lookup = elixir_lookup or DEFAULT_ELIXIR
     costs = [lookup.get(key, 4) for key in card_keys]  # default 4 if unknown
@@ -65,7 +66,7 @@ def compute_avg_elixir(card_keys: list[str], elixir_lookup: dict[str, int] | Non
 
 def classify_archetype(
     card_keys: list[str],
-    elixir_lookup: dict[str, int] | None = None,
+    elixir_lookup: Optional[dict[str, int]] = None,
 ) -> str:
     """
     Classify a deck's archetype based on its card composition.

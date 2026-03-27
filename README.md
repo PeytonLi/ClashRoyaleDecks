@@ -1,55 +1,66 @@
-# ⚔️ Clash Royale ML Deck Recommender
+# Clash Royale ML Deck Recommender
 
-An AI-powered deck recommendation engine that uses Hybrid Machine Learning to suggest the perfect Clash Royale decks based on your unique card collection, trophy range, and playstyle.
+Hybrid ML + FastAPI + Next.js application that recommends decks based on a player's owned cards, levels, and ladder context.
 
-![CR Decks Landing Page](C:/Users/lipey/.gemini/antigravity/brain/13a4af2b-0828-469c-91bb-9f877c36d733/landing_page_build_error_1774401281484.png)
-*(Note: Visual representation of the landing page in development)*
+## What It Does
+- Fetches player and card data from the Clash Royale API.
+- Scrapes top-ladder deck data and computes card synergies.
+- Uses a hybrid recommender to return deck suggestions with explanations.
+- Serves recommendations through FastAPI with a Next.js frontend.
 
-## 🚀 The Vision
-Most deck builders just show you what's "meta." Our recommender goes deeper—it analyzes your specific card levels and collection to ensure you aren't just playing a "good deck," but a deck that **you can actually win with** at your current progression.
+## Tech Stack
+- Frontend: Next.js 16, React 19, Tailwind CSS v4
+- Backend: FastAPI, SQLAlchemy async, PostgreSQL 16
+- ML/Data: scikit-learn, pandas, numpy
 
-## ✨ Current Features
-- **AI-Driven Recommendations**: Hybrid model combining SVD Collaborative Filtering and Content-Based Synergy scoring.
-- **Level Fit Analysis**: Algorithms that prioritize your high-level cards to avoid ladder mismatches.
-- **Archetype Filtering**: Quick-select between Cycle, Beatdown, Bridge Spam, Control, and Bait.
-- **Explainable AI**: Every recommendation comes with a detailed breakdown of *why* it works and how to play it.
-- **Usage Tracking**: IP-based free tier (3 uses) with a built-in Stripe-ready paywall.
-- **Automated Meta Updates**: Weekly data scraping from top 1000 ladder players and auto-retraining.
+## Quick Start
 
-## 🛠️ Architecture
-- **Frontend**: Next.js 16 (React 19) + Tailwind CSS v4 (Aesthetic Red-to-Blue Gradients).
-- **Backend**: FastAPI (Python 3.12) + PostgreSQL 16.
-- **ML Engine**: Scikit-Learn (SVD) + Custom Synergy Matrix compute.
-- **BFF Pattern**: Next.js API routes acting as a secure proxy to the private FastAPI backend.
-
-## 🧭 Roadmap (Future Features)
-- [ ] **Mobile App**: Porting the UI to React Native for on-the-go deck building.
-- [ ] **Challenge Filters**: Dedicated recommendation modes for Grand Challenges and Classic Challenges.
-- [ ] **F2P Progression Engine**: A "Free-to-Play" filter that factors in gold/wildcard costs and future upgrade paths.
-- [ ] **Granular Archetypes**: Breaking down high-level categories into more specific sub-types (e.g., Lavahound Beatdown vs. Golem Beatdown).
-- [ ] **Advanced Analytics**: Deeper historical win-rate charts for recommended decks over multiple seasons.
-
-## 🔧 Quick Start
-
-### 1. Backend Setup
+### 1. Start PostgreSQL + API (Docker)
 ```bash
-cd server
-cp .env.example .env
-# Set your CR_API_KEY and DATABASE_URL
-docker-compose up -d db
-pip install -r requirements.txt
-python -m app.ml.trainer  # Initial data scrape and model train
-uvicorn main:app --reload
+docker compose up -d --build
 ```
 
-### 2. Frontend Setup
+### 2. Run frontend
 ```bash
 cd client
-cp .env.example .env.local
 npm install
 npm run dev
 ```
 
----
+### 3. Backend local dev (optional, without Docker API)
+```bash
+cd server
+# Configure server/.env with CR_API_KEY and DATABASE_URL
+python -m pip install -r requirements.txt
+python -m app.ml.trainer
+uvicorn main:app --reload
+```
 
-*Not affiliated with Supercell. Clash Royale is a trademark of Supercell Oy.*
+## Testing
+
+Run backend tests:
+```bash
+cd server
+python -m pytest tests -v
+```
+
+## Deployment Health Checks
+
+Deep deployment checks (DB, API, model, Supercell auth, scraper, optional smoke tests):
+```bash
+cd server
+python scripts/deploy_healthcheck.py
+python scripts/deploy_healthcheck.py --run-smoke-tests
+```
+
+Lightweight checks only (API + DB):
+```bash
+cd server
+python scripts/deploy_healthcheck.py --skip-supercell --skip-scraper --skip-model
+```
+
+## Notes
+- API container health is exposed through `/health` and Docker health checks.
+- `server/tests` uses a dedicated test database (`clashroyale_test`) and auto-creates it if missing.
+
+Not affiliated with Supercell. Clash Royale is a trademark of Supercell Oy.

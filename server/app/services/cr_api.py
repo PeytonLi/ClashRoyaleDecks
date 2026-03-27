@@ -7,8 +7,7 @@ API docs: https://developer.clashroyale.com
 
 import os
 from datetime import datetime, timezone
-from typing import Any
-
+from typing import Any, Optional
 import httpx
 from dotenv import load_dotenv
 
@@ -30,9 +29,9 @@ class ClashRoyaleAPIError(Exception):
 class CRApiClient:
     """Async client for the Clash Royale Official API."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or CR_API_KEY
-        self._client: httpx.AsyncClient | None = None
+        self._client: Optional[httpx.AsyncClient] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -147,9 +146,9 @@ class CRApiClient:
 
     async def get_top_players(self, location_id: str = "global") -> list[dict[str, Any]]:
         """Fetch top players from the leaderboard."""
-        endpoint = f"/locations/{location_id}/rankings/players"
+        endpoint = f"/locations/{location_id}/pathoflegend/players"
         if location_id == "global":
-            endpoint = "/locations/global/rankings/players"
+            endpoint = "/locations/global/pathoflegend/players"
 
         data = await self._request(endpoint)
         return data.get("items", [])

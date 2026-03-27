@@ -85,7 +85,7 @@ export default function RecommendPage() {
                   value={playerTag}
                   onChange={(e) => setPlayerTag(e.target.value.toUpperCase())}
                   placeholder="ABC123XY"
-                  className="input-field !pl-9 uppercase tracking-wider font-mono"
+                  className="input-field pl-9! uppercase tracking-wider font-mono"
                   maxLength={15}
                   autoComplete="off"
                   autoFocus
@@ -126,7 +126,7 @@ export default function RecommendPage() {
 
             {/* Error */}
             {error && (
-              <div className="p-4 rounded-xl bg-[rgba(230,57,70,0.1)] border border-[rgba(230,57,70,0.3)] text-sm text-brand-red">
+              <div className="p-4 rounded-xl bg-[rgba(230,57,70,0.1)] border border-border-accent text-sm text-brand-red">
                 {error}
               </div>
             )}
@@ -135,7 +135,7 @@ export default function RecommendPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full text-lg !py-4 flex items-center justify-center gap-2
+              className="btn-primary w-full text-lg py-4! flex items-center justify-center gap-2
                 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? (

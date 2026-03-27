@@ -10,6 +10,7 @@ Produces detailed, human-readable explanations covering:
 """
 
 from itertools import combinations
+from typing import Optional
 
 
 def generate_explanation(
@@ -17,7 +18,7 @@ def generate_explanation(
     scores: dict,
     player_card_levels: dict[str, int],
     player_trophies: int,
-    archetype_pref: str | None,
+    archetype_pref: Optional[str],
     synergy_map: dict[tuple, float],
 ) -> str:
     """

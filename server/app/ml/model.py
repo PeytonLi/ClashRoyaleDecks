@@ -43,7 +43,7 @@ class DeckRecommender:
         results = model.recommend(player_card_levels, archetype_pref, top_k=3)
     """
 
-    def __init__(self, weights: dict[str, float] | None = None):
+    def __init__(self, weights: Optional[dict[str, float]] = None):
         self.weights = weights or DEFAULT_WEIGHTS
 
         # SVD model for collaborative filtering
@@ -57,7 +57,7 @@ class DeckRecommender:
         self.card_to_idx: dict[str, int] = {}    # Card key -> matrix index
 
         # SVD matrices (populated after training)
-        self.deck_vectors: np.ndarray | None = None  # meta_decks projected into latent space
+        self.deck_vectors: Optional[np.ndarray] = None  # meta_decks projected into latent space
 
     def load_data(
         self,
@@ -146,7 +146,7 @@ class DeckRecommender:
         similarities = cosine_similarity(player_latent, self.deck_vectors).flatten()
         return similarities
 
-    def _score_cb(self, archetype_pref: str | None = None) -> np.ndarray:
+    def _score_cb(self, archetype_pref: Optional[str] = None) -> np.ndarray:
         """
         Content-Based score for each meta deck.
 
@@ -214,7 +214,7 @@ class DeckRecommender:
     def recommend(
         self,
         player_card_levels: dict[str, int],
-        archetype_pref: str | None = None,
+        archetype_pref: Optional[str] = None,
         top_k: int = 3,
     ) -> list[dict]:
         """
@@ -284,7 +284,7 @@ class DeckRecommender:
 
         return results
 
-    def save(self, path: str | None = None):
+    def save(self, path: Optional[str] = None):
         """Serialize model to disk."""
         os.makedirs(MODEL_DIR, exist_ok=True)
         save_path = path or os.path.join(MODEL_DIR, "deck_recommender.pkl")
@@ -304,7 +304,7 @@ class DeckRecommender:
             pickle.dump(model_data, f)
         logger.info(f"Model saved to {save_path}")
 
-    def load(self, path: str | None = None) -> bool:
+    def load(self, path: Optional[str] = None) -> bool:
         """Load model from disk. Returns True if successful."""
         load_path = path or os.path.join(MODEL_DIR, "deck_recommender.pkl")
 

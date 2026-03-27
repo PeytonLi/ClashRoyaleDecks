@@ -5,6 +5,7 @@ Database connection and session management using SQLAlchemy 2.0 + asyncpg.
 import os
 from dotenv import load_dotenv
 
+from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -25,7 +26,7 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency that provides a database session."""
     async with async_session() as session:
         try:

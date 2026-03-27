@@ -7,9 +7,12 @@ Sources:
 - Kaggle datasets (historical data)
 """
 
+import asyncio
 import hashlib
 import logging
+import random
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -31,7 +34,7 @@ def deck_hash(card_keys: list[str]) -> str:
 class DeckScraper:
     """Scrapes and stores meta decks from various sources."""
 
-    def __init__(self, db: AsyncSession, cr_client: CRApiClient | None = None):
+    def __init__(self, db: AsyncSession, cr_client: Optional[CRApiClient] = None):
         self.db = db
         self.cr_client = cr_client or CRApiClient()
 
@@ -130,7 +133,7 @@ class DeckScraper:
         usage_rate: float = 0.0,
         trophy_range_low: int = 0,
         trophy_range_high: int = 9000,
-        season: str | None = None,
+        season: Optional[str] = None,
         source: str = "unknown",
         sample_size: int = 1,
     ) -> bool:
@@ -169,7 +172,7 @@ class DeckScraper:
         await self.db.execute(stmt)
         return True
 
-    async def compute_synergies(self, season: str | None = None) -> int:
+    async def compute_synergies(self, season: Optional[str] = None) -> int:
         """
         Compute card-pair synergy scores from the meta_decks table.
 
