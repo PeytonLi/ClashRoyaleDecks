@@ -13,6 +13,7 @@ from app.database import get_db
 from app.ml.explainer import generate_explanation, generate_short_summary
 from app.ml.model import recommender
 from app.models import Player
+from app.services.tag_utils import build_tag_candidates, normalize_tag_input, to_hash_tag
 
 router = APIRouter()
 
@@ -68,19 +69,23 @@ async def recommend_deck(
     runs through the hybrid ML model, and returns recommendations
     with detailed explanations.
     """
-    # Normalize tag
-    tag = request.player_tag.strip().upper()
-    if not tag.startswith("#"):
-        tag = f"#{tag}"
+    try:
+        normalized = normalize_tag_input(request.player_tag)
+        candidates = [to_hash_tag(candidate) for candidate in build_tag_candidates(normalized)]
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
-    # Get player from cache
-    result = await db.execute(select(Player).where(Player.tag == tag))
-    player = result.scalar_one_or_none()
+    player = None
+    for candidate in candidates:
+        result = await db.execute(select(Player).where(Player.tag == candidate))
+        player = result.scalar_one_or_none()
+        if player is not None:
+            break
 
     if not player:
         raise HTTPException(
             status_code=404,
-            detail="Player not found in cache. Call GET /api/players/{tag} first to fetch their data.",
+            detail="Player not found in cache. Call GET /api/players/{tag} first to fetch their data. Use 0, not O.",
         )
 
     # Check if model is trained

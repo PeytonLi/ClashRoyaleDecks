@@ -21,7 +21,7 @@ export default function RecommendPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -40,9 +40,11 @@ export default function RecommendPage() {
         const data = await playerRes.json().catch(() => ({}));
         throw new Error(data.error || `Player not found (${playerRes.status})`);
       }
+      const playerData = await playerRes.json();
+      const resolvedTag = String(playerData.tag || `#${cleanTag}`).replace(/^#/, '');
 
       // Step 2: Navigate to results with query params
-      const params = new URLSearchParams({ tag: cleanTag });
+      const params = new URLSearchParams({ tag: resolvedTag });
       if (archetype) params.set('archetype', archetype);
       router.push(`/results?${params.toString()}`);
     } catch (err: unknown) {
@@ -93,7 +95,7 @@ export default function RecommendPage() {
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted" />
               </div>
               <p className="mt-1.5 text-xs text-text-muted">
-                Find your tag at Settings → Player Tag in Clash Royale
+                Find your tag at Settings, then Player Tag in Clash Royale. Use 0, not O.
               </p>
             </div>
 
