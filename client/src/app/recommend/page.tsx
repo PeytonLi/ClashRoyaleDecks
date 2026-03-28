@@ -157,12 +157,8 @@ export default function RecommendPage() {
           {/* Usage info */}
           <div className="mt-8 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-card border border-border-subtle">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-accent-green" />
-                <div className="w-2 h-2 rounded-full bg-accent-green" />
-                <div className="w-2 h-2 rounded-full bg-accent-green" />
-              </div>
-              <span className="text-xs text-text-secondary">3 free uses remaining</span>
+              <div className="w-2 h-2 rounded-full bg-accent-green" />
+              <span className="text-xs text-text-secondary">Free during beta</span>
             </div>
           </div>
         </div>

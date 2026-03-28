@@ -42,7 +42,7 @@ export default function Home() {
             </div>
 
             <p className="mt-5 text-sm text-text-muted">
-              3 free recommendations · No login required
+              Free during beta · No login required
             </p>
           </div>
         </div>

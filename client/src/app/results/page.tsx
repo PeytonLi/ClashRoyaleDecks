@@ -108,11 +108,14 @@ function ResultsContent() {
             <AlertCircle className="h-8 w-8 text-accent-yellow" />
           </div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">Free Limit Reached</h2>
-          <p className="text-text-secondary mb-8">
-            You&apos;ve used all 3 free recommendations. Upgrade to unlock unlimited access.
+          <p className="text-text-secondary mb-4">
+            You&apos;ve used your free recommendations. Premium with unlimited access is coming soon!
           </p>
-          <Link href="/payment" className="btn-primary text-lg py-3.5! px-10!">
-            Upgrade Now
+          <p className="text-sm text-text-muted mb-8">
+            We&apos;re working on a premium tier. Stay tuned for updates.
+          </p>
+          <Link href="/recommend" className="btn-primary text-lg py-3.5! px-10!">
+            Back to Search
           </Link>
           <div className="mt-4">
             <Link href="/" className="text-sm text-text-muted hover:text-text-secondary transition-colors">

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import verify_bff_origin
 from app.ml.explainer import generate_explanation, generate_short_summary
 from app.ml.model import recommender
 from app.models import Player
@@ -57,7 +58,7 @@ class RecommendResponse(BaseModel):
 # --- Endpoints ---
 
 
-@router.post("/recommend")
+@router.post("/recommend", dependencies=[Depends(verify_bff_origin)])
 async def recommend_deck(
     request: RecommendRequest,
     db: AsyncSession = Depends(get_db),

@@ -17,6 +17,11 @@ export default function PaymentPage() {
             Unlock Unlimited Recommendations
           </h1>
 
+          <div className="mb-6 px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm text-text-secondary">
+            We&apos;re in beta &mdash; payment integration is coming soon.
+            Free usage is available while we finalize premium features.
+          </div>
+
           <p className="text-text-secondary mb-8 leading-relaxed">
             Get unlimited AI-powered deck recommendations, priority meta updates,
             and archetype analysis.
