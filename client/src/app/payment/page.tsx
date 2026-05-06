@@ -1,73 +1,61 @@
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
-import { CreditCard } from 'lucide-react';
+import { Check, CreditCard, ShieldCheck } from 'lucide-react';
+
+const perks = [
+  'Unlimited deck recommendations',
+  'All archetype filters',
+  'Card-level explanations',
+  'Weekly meta-updated model',
+];
 
 export default function PaymentPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <main className="grow flex items-center justify-center py-16 px-4">
-        <div className="text-center max-w-lg animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-hero mb-6">
-            <CreditCard className="h-8 w-8 text-white" />
+      <main className="page-frame grid grow items-center gap-8 py-12 lg:grid-cols-[0.85fr_1.15fr]">
+        <section>
+          <div className="eyebrow mb-5">
+            <CreditCard className="h-4 w-4" />
+            Premium access
           </div>
-
-          <h1 className="text-3xl font-bold text-text-primary mb-3">
-            Unlock Unlimited Recommendations
+          <h1 className="font-display text-4xl font-bold leading-tight text-text-primary md:text-6xl">
+            Unlimited recommendations are planned for launch.
           </h1>
-
-          <div className="mb-6 px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm text-text-secondary">
-            We&apos;re in beta &mdash; payment integration is coming soon.
-            Free usage is available while we finalize premium features.
-          </div>
-
-          <p className="text-text-secondary mb-8 leading-relaxed">
-            Get unlimited AI-powered deck recommendations, priority meta updates,
-            and archetype analysis.
+          <p className="mt-5 max-w-xl text-lg leading-8 text-text-secondary">
+            The Stripe checkout flow is not active yet. Free beta scans remain available while premium billing is finished.
           </p>
+          <Link href="/recommend" className="btn-primary mt-8 px-5">
+            Keep scanning
+          </Link>
+        </section>
 
-          {/* Pricing card */}
-          <div className="glass-card p-8 mb-6 bg-gradient-card animate-pulse-glow">
-            <div className="text-4xl font-black text-gradient mb-1">
-              $4.99
+        <section className="arena-panel p-5 sm:p-7">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <div>
+              <p className="font-display text-sm uppercase tracking-[0.16em] text-brand-gold">Lifetime plan</p>
+              <div className="mt-2 flex items-end gap-2">
+                <span className="font-display text-5xl font-bold text-gradient">$4.99</span>
+                <span className="pb-2 text-sm text-text-muted">one-time</span>
+              </div>
             </div>
-            <div className="text-text-muted text-sm mb-6">One-time payment · Lifetime access</div>
-
-            <ul className="space-y-3 text-left text-sm text-text-secondary mb-8">
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-green" />
-                Unlimited deck recommendations
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-green" />
-                All 5 archetype filters
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-green" />
-                Detailed card-level explanations
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-green" />
-                Weekly meta-updated model
-              </li>
-            </ul>
-
-            <button
-              className="btn-primary w-full text-lg !py-3.5"
-              disabled
-            >
-              Coming Soon — Stripe Integration
-            </button>
+            <ShieldCheck className="h-9 w-9 text-brand-cyan" />
           </div>
 
-          <Link
-            href="/"
-            className="text-sm text-text-muted hover:text-text-secondary transition-colors"
-          >
-            Back to Home
-          </Link>
-        </div>
+          <div className="grid gap-3">
+            {perks.map((perk) => (
+              <div key={perk} className="flex items-center gap-3 border-b border-border-subtle py-3">
+                <Check className="h-4 w-4 text-accent-green" />
+                <span className="font-semibold text-text-secondary">{perk}</span>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" className="btn-secondary mt-7 min-h-12 w-full px-5" disabled>
+            Stripe integration pending
+          </button>
+        </section>
       </main>
     </div>
   );
