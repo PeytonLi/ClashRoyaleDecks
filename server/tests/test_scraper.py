@@ -16,6 +16,44 @@ from app.models import Card, MetaDeck, CardSynergy
 from app.services.cr_api import CRApiClient
 
 
+BASE_DECK = [
+    "firecracker",
+    "hog-rider",
+    "knight",
+    "cannon",
+    "ice-spirit",
+    "the-log",
+    "musketeer",
+    "skeletons",
+]
+
+
+@pytest.mark.asyncio
+async def test_scraper_imports_special_variants_with_distinct_hashes(cleaned_db: AsyncSession):
+    scraper = DeckScraper(cleaned_db)
+
+    imported = await scraper.import_deck_list([
+        {"card_keys": BASE_DECK, "win_rate": 0.5},
+        {
+            "card_keys": BASE_DECK,
+            "deck_slots": [
+                {"card_key": "firecracker", "form": "evolution"},
+                *[{"card_key": key, "form": "base"} for key in BASE_DECK[1:]],
+            ],
+            "win_rate": 0.6,
+        },
+    ])
+
+    assert imported == 2
+
+    result = await cleaned_db.execute(select(MetaDeck))
+    decks = result.scalars().all()
+
+    assert len(decks) == 2
+    assert len({deck.deck_hash for deck in decks}) == 2
+    assert any(deck.deck_slots[0]["form"] == "evolution" for deck in decks)
+
+
 @pytest.mark.asyncio
 @pytest.mark.api
 async def test_scraper_syncs_cards_from_supercell_api(cleaned_db: AsyncSession, cr_api_client: CRApiClient):
