@@ -215,6 +215,7 @@ class DeckRecommender:
         self,
         player_card_levels: dict[str, int],
         archetype_pref: Optional[str] = None,
+        required_cards: Optional[list[str]] = None,
         top_k: int = 3,
     ) -> list[dict]:
         """
@@ -223,6 +224,7 @@ class DeckRecommender:
         Args:
             player_card_levels: Dict mapping card key → player's level for that card
             archetype_pref: Optional archetype preference (cycle, beatdown, etc.)
+            required_cards: Optional card keys that every returned deck must include
             top_k: Number of recommendations to return
 
         Returns:
@@ -259,8 +261,20 @@ class DeckRecommender:
             w["win_rate"] * wr_norm
         )
 
+        required_set = {card for card in (required_cards or []) if card}
+        candidate_indices = np.arange(len(self.meta_decks))
+        if required_set:
+            candidate_indices = np.array([
+                idx for idx, deck in enumerate(self.meta_decks)
+                if required_set.issubset(set(deck.get("card_keys", [])))
+            ])
+
+        if candidate_indices.size == 0:
+            return []
+
         # Get top K indices
-        top_indices = np.argsort(final_scores)[::-1][:top_k]
+        ranked_candidates = candidate_indices[np.argsort(final_scores[candidate_indices])[::-1]]
+        top_indices = ranked_candidates[:top_k]
 
         results = []
         for idx in top_indices:

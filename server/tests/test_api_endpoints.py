@@ -14,7 +14,8 @@ from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.data.scraper import DeckScraper
-from app.models import Player
+from app.models import Player, User, UserPlayer
+from app.ml.model import DeckRecommender
 from app.services.cr_api import CRApiClient, ClashRoyaleAPIError
 
 
@@ -33,6 +34,42 @@ def _mock_player_payload(tag: str) -> dict:
     }
 
 
+async def _auth_headers(db: AsyncSession, email: str = "test@example.com") -> dict[str, str]:
+    user = User(email=email, name="Test User")
+    db.add(user)
+    await db.flush()
+    await db.commit()
+    return {"X-User-Id": str(user.id)}
+
+
+@pytest.mark.asyncio
+async def test_auth_signup_and_login(async_client: AsyncClient, cleaned_db: AsyncSession):
+    signup = await async_client.post(
+        "/api/auth/signup",
+        json={"email": "NewUser@Example.com", "password": "strongpass123", "name": "New User"},
+    )
+
+    assert signup.status_code == 201
+    created = signup.json()
+    assert created["email"] == "newuser@example.com"
+    assert created["id"] > 0
+
+    login = await async_client.post(
+        "/api/auth/login",
+        json={"email": "newuser@example.com", "password": "strongpass123"},
+    )
+
+    assert login.status_code == 200
+    assert login.json()["id"] == created["id"]
+
+
+@pytest.mark.asyncio
+async def test_player_endpoint_requires_authenticated_user(async_client: AsyncClient):
+    response = await async_client.get("/api/players/GGCQ2PJV")
+
+    assert response.status_code == 401
+
+
 @pytest.mark.asyncio
 @pytest.mark.api
 async def test_player_endpoint_fetches_and_caches_profile(
@@ -45,9 +82,10 @@ async def test_player_endpoint_fetches_and_caches_profile(
     and returns properly formatted response.
     """
     test_tag = "#GGCQ2PJV"
+    headers = await _auth_headers(db_session)
     
     # Act: Make request to player endpoint
-    response = await async_client.get(f"/api/players/{test_tag}")
+    response = await async_client.get(f"/api/players/{test_tag}", headers=headers)
     
     # Assert: Response structure (regardless of whether endpoint is mocked or real)
     assert response.status_code in [200, 404, 429, 500, 502], \
@@ -62,14 +100,19 @@ async def test_player_endpoint_fetches_and_caches_profile(
 
 
 @pytest.mark.asyncio
-async def test_recommend_endpoint_requires_player_tag(async_client: AsyncClient):
+async def test_recommend_endpoint_requires_player_tag(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
     """
     Verify that POST /api/predict/recommend validates required player tag parameter.
     """
+    headers = await _auth_headers(cleaned_db, email="required@example.com")
     # Act: Make request without player tag
     response = await async_client.post(
         "/api/predict/recommend",
-        json={}  # Empty body
+        json={},  # Empty body
+        headers=headers,
     )
     
     # Assert: Should return validation error
@@ -82,6 +125,8 @@ async def test_recommend_endpoint_accepts_o_and_finds_cached_zero_variant(
     cleaned_db: AsyncSession,
 ):
     """Recommend endpoint should resolve O->0 when querying cached player rows."""
+    headers = await _auth_headers(cleaned_db)
+    user_id = int(headers["X-User-Id"])
     cleaned_db.add(Player(
         tag="#J0C9YVUL",
         name="Resolved Player",
@@ -93,6 +138,7 @@ async def test_recommend_endpoint_accepts_o_and_finds_cached_zero_variant(
         card_levels={"hog-rider": 14},
         cards_owned=["hog-rider"],
     ))
+    cleaned_db.add(UserPlayer(user_id=user_id, player_tag="#J0C9YVUL"))
     await cleaned_db.commit()
 
     with patch("app.routers.predict.recommender.is_trained", True), \
@@ -100,6 +146,7 @@ async def test_recommend_endpoint_accepts_o_and_finds_cached_zero_variant(
         response = await async_client.post(
             "/api/predict/recommend",
             json={"player_tag": "#JOC9YVUL"},
+            headers=headers,
         )
 
     # Route reached model stage, meaning cache lookup succeeded via O->0 resolution.
@@ -108,22 +155,154 @@ async def test_recommend_endpoint_accepts_o_and_finds_cached_zero_variant(
 
 
 @pytest.mark.asyncio
-async def test_player_endpoint_rejects_invalid_tag_characters(async_client: AsyncClient):
-    """Unsupported characters should return 400 before any CR API call."""
-    response = await async_client.get("/api/players/J0C9YVUX")
+async def test_recommend_endpoint_passes_optional_required_card(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
+    """Optional required cards should be resolved and sent to the scorer."""
+    headers = await _auth_headers(cleaned_db)
+    user_id = int(headers["X-User-Id"])
+    cleaned_db.add(Player(
+        tag="#GGCQ2PJV",
+        name="Card Filter Player",
+        trophies=6000,
+        best_trophies=6200,
+        arena_id=54000010,
+        arena_name="League 1",
+        exp_level=50,
+        card_levels={"hog-rider": 14, "fireball": 13},
+        cards_owned=["hog-rider", "fireball"],
+    ))
+    cleaned_db.add(UserPlayer(user_id=user_id, player_tag="#GGCQ2PJV"))
+    await cleaned_db.commit()
 
-    assert response.status_code == 400
-    detail = response.json().get("detail", "")
-    assert "0 not O" in detail
+    deck = {
+        "card_keys": [
+            "hog-rider",
+            "fireball",
+            "the-log",
+            "ice-spirit",
+            "skeletons",
+            "cannon",
+            "musketeer",
+            "knight",
+        ],
+        "archetype": "cycle",
+        "win_rate": 0.58,
+        "avg_elixir": 2.8,
+        "source": "test",
+        "sample_size": 12,
+    }
+    model_cards = deck["card_keys"] + ["giant"]
+
+    with patch("app.routers.predict.recommender.is_trained", True), \
+        patch("app.routers.predict.recommender.all_card_keys", model_cards), \
+        patch("app.routers.predict.recommender.recommend", return_value=[{
+            "deck": deck,
+            "scores": {
+                "overall": 0.91,
+                "cf": 0.5,
+                "cb": 0.5,
+                "level_fit": 0.85,
+                "win_rate": 0.7,
+            },
+        }]) as mock_recommend:
+        response = await async_client.post(
+            "/api/predict/recommend",
+            json={"player_tag": "#GGCQ2PJV", "required_cards": ["Hog Rider"]},
+            headers=headers,
+        )
+
+    assert response.status_code == 200
+    assert mock_recommend.call_args.kwargs["required_cards"] == ["hog-rider"]
+    data = response.json()
+    assert data["required_cards"] == ["Hog Rider"]
+    assert "Hog Rider" in data["recommendations"][0]["cards"]
+
+
+def test_recommender_filters_to_required_cards():
+    """The scorer should only return decks containing every required card."""
+    model = DeckRecommender()
+    model.meta_decks = [
+        {
+            "card_keys": ["giant", "fireball"],
+            "archetype": "beatdown",
+            "win_rate": 0.99,
+        },
+        {
+            "card_keys": ["hog-rider", "fireball"],
+            "archetype": "cycle",
+            "win_rate": 0.5,
+        },
+    ]
+    model.synergy_map = {}
+    model.all_card_keys = ["giant", "hog-rider", "fireball"]
+    model.card_to_idx = {key: idx for idx, key in enumerate(model.all_card_keys)}
+
+    results = model.recommend(
+        player_card_levels={"hog-rider": 14, "fireball": 14, "giant": 14},
+        required_cards=["hog-rider"],
+        top_k=2,
+    )
+
+    assert len(results) == 1
+    assert "hog-rider" in results[0]["deck"]["card_keys"]
 
 
 @pytest.mark.asyncio
-async def test_player_endpoint_normalizes_valid_tag_before_api_call(async_client: AsyncClient):
+async def test_recommend_endpoint_rejects_unlinked_cached_player(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
+    headers = await _auth_headers(cleaned_db, email="owner@example.com")
+    cleaned_db.add(Player(
+        tag="#GGCQ2PJV",
+        name="Other Player",
+        trophies=6000,
+        best_trophies=6200,
+        arena_id=54000010,
+        arena_name="League 1",
+        exp_level=50,
+        card_levels={"hog-rider": 14},
+        cards_owned=["hog-rider"],
+    ))
+    await cleaned_db.commit()
+
+    response = await async_client.post(
+        "/api/predict/recommend",
+        json={"player_tag": "#GGCQ2PJV"},
+        headers=headers,
+    )
+
+    assert response.status_code == 403
+    assert "not linked" in response.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_player_endpoint_rejects_invalid_tag_characters(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
+    """Unsupported characters should return 400 before any CR API call."""
+    headers = await _auth_headers(cleaned_db, email="invalid@example.com")
+    response = await async_client.get("/api/players/J0C9YVUX", headers=headers)
+
+    assert response.status_code == 400
+    detail = response.json().get("detail", "")
+    assert "Invalid characters" in detail
+
+
+@pytest.mark.asyncio
+async def test_player_endpoint_normalizes_valid_tag_before_api_call(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
     """Valid tags should be normalized and forwarded as canonical uppercase # format."""
+    headers = await _auth_headers(cleaned_db)
     with patch("app.routers.players.cr_api.get_player", new_callable=AsyncMock) as mock_get_player:
         mock_get_player.return_value = _mock_player_payload("#GGCQ2PJV")
 
-        response = await async_client.get("/api/players/ggcq2pjv")
+        response = await async_client.get("/api/players/ggcq2pjv", headers=headers)
 
         assert response.status_code == 200
         mock_get_player.assert_awaited_once_with("#GGCQ2PJV")
@@ -132,15 +311,19 @@ async def test_player_endpoint_normalizes_valid_tag_before_api_call(async_client
 
 
 @pytest.mark.asyncio
-async def test_player_endpoint_resolves_o_to_zero_variant(async_client: AsyncClient):
+async def test_player_endpoint_resolves_o_to_zero_variant(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
     """Ambiguous O input should retry with 0 variant and succeed when available."""
+    headers = await _auth_headers(cleaned_db, email="variant@example.com")
     with patch("app.routers.players.cr_api.get_player", new_callable=AsyncMock) as mock_get_player:
         mock_get_player.side_effect = [
             ClashRoyaleAPIError(404, "Player not found"),
             _mock_player_payload("#J0C9YVUL"),
         ]
 
-        response = await async_client.get("/api/players/JOC9YVUL")
+        response = await async_client.get("/api/players/JOC9YVUL", headers=headers)
 
         assert response.status_code == 200
         assert mock_get_player.await_count == 2
@@ -151,22 +334,30 @@ async def test_player_endpoint_resolves_o_to_zero_variant(async_client: AsyncCli
 
 
 @pytest.mark.asyncio
-async def test_player_endpoint_rejects_too_short_tag(async_client: AsyncClient):
+async def test_player_endpoint_rejects_too_short_tag(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
     """Very short tags should be rejected as invalid format."""
-    response = await async_client.get("/api/players/AB")
+    headers = await _auth_headers(cleaned_db, email="short@example.com")
+    response = await async_client.get("/api/players/AB", headers=headers)
 
     assert response.status_code == 400
     detail = response.json().get("detail", "")
-    assert "between" in detail
+    assert "Invalid player tag" in detail
 
 
 @pytest.mark.asyncio
-async def test_player_endpoint_returns_not_found_after_candidate_exhaustion(async_client: AsyncClient):
+async def test_player_endpoint_returns_not_found_after_candidate_exhaustion(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
     """All-candidate 404s should return actionable not-found guidance."""
+    headers = await _auth_headers(cleaned_db, email="notfound@example.com")
     with patch("app.routers.players.cr_api.get_player", new_callable=AsyncMock) as mock_get_player:
         mock_get_player.side_effect = ClashRoyaleAPIError(404, "Player not found")
 
-        response = await async_client.get("/api/players/JOC9YVUL")
+        response = await async_client.get("/api/players/JOC9YVUL", headers=headers)
 
         assert response.status_code == 404
         detail = response.json().get("detail", "")

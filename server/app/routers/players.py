@@ -10,11 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Player
+from app.dependencies import require_existing_user_id, verify_bff_origin
+from app.models import Player, UserPlayer
 from app.services.cr_api import ClashRoyaleAPIError, cr_api
 from app.services.tag_utils import build_tag_candidates, normalize_tag_input, to_hash_tag
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_bff_origin)])
 
 CACHE_TTL_HOURS = 1  # Re-fetch from API if data is older than this
 
@@ -62,8 +63,23 @@ def _response_from_api_data(resolved_tag: str, player_data: dict) -> PlayerRespo
     )
 
 
+async def _link_player_to_user(db: AsyncSession, user_id: int, player_tag: str) -> None:
+    result = await db.execute(
+        select(UserPlayer).where(
+            UserPlayer.user_id == user_id,
+            UserPlayer.player_tag == player_tag,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        db.add(UserPlayer(user_id=user_id, player_tag=player_tag))
+
+
 @router.get("/{tag}")
-async def get_player(tag: str, db: AsyncSession = Depends(get_db)) -> PlayerResponse:
+async def get_player(
+    tag: str,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(require_existing_user_id),
+) -> PlayerResponse:
     """
     Fetch a player's profile by tag.
 
@@ -86,6 +102,8 @@ async def get_player(tag: str, db: AsyncSession = Depends(get_db)) -> PlayerResp
         if cached_player:
             age = datetime.now(timezone.utc) - cached_player.last_fetched
             if age < timedelta(hours=CACHE_TTL_HOURS):
+                await _link_player_to_user(db, user_id, clean_tag)
+                await db.commit()
                 return _response_from_cached_player(cached_player, cached=True)
 
         # Fetch candidate from CR API
@@ -127,6 +145,7 @@ async def get_player(tag: str, db: AsyncSession = Depends(get_db)) -> PlayerResp
                 last_fetched=now,
             ))
 
+        await _link_player_to_user(db, user_id, clean_tag)
         await db.commit()
         return _response_from_api_data(clean_tag, player_data)
 

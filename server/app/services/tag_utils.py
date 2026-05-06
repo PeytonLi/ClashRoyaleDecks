@@ -4,8 +4,8 @@ from __future__ import annotations
 
 VALID_TAG_CHARS = set("0289PYLQGRJCUV")
 AMBIGUOUS_INPUT_CHARS = {"O"}
-MIN_TAG_LEN = 3
-MAX_TAG_LEN = 15
+MIN_TAG_LEN = 7
+MAX_TAG_LEN = 9
 
 
 def normalize_tag_input(tag: str) -> str:
@@ -19,15 +19,14 @@ def normalize_tag_input(tag: str) -> str:
 
     if len(clean) < MIN_TAG_LEN or len(clean) > MAX_TAG_LEN:
         raise ValueError(
-            f"Invalid player tag format. Tag length must be between {MIN_TAG_LEN} and {MAX_TAG_LEN} characters."
+            "Invalid player tag. Double check tag characters."
         )
 
     allowed_input_chars = VALID_TAG_CHARS | AMBIGUOUS_INPUT_CHARS
     invalid_chars = sorted({ch for ch in clean if ch not in allowed_input_chars})
     if invalid_chars:
         raise ValueError(
-            "Invalid player tag format. Use only Clash tag characters "
-            "(0289PYLQGRJCUV). Tip: use 0 not O."
+            "Invalid characters in player tag."
         )
 
     return clean
@@ -56,8 +55,7 @@ def build_tag_candidates(normalized_tag: str) -> list[str]:
 
     if not deduped:
         raise ValueError(
-            "Invalid player tag format. Use only Clash tag characters "
-            "(0289PYLQGRJCUV). Tip: use 0 not O."
+            "No valid candidates for player tag."
         )
 
     return deduped

@@ -16,19 +16,21 @@ interface DeckRecommendation {
 interface DeckCardProps {
   deck: DeckRecommendation;
   rank: number;
+  requiredCards?: string[];
 }
 
 function pct(value: number, digits = 0) {
   return Math.max(0, Math.min(100, value * 100)).toFixed(digits);
 }
 
-export default function DeckCard({ deck, rank }: DeckCardProps) {
+export default function DeckCard({ deck, rank, requiredCards = [] }: DeckCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const winPct = pct(deck.win_rate, 1);
   const levelPct = pct(deck.level_fit_score);
   const overallPct = pct(deck.overall_score);
   const archetypeClass = `badge badge-${deck.archetype.replace('_', '-')}`;
+  const requiredCardSet = new Set(requiredCards.map((card) => card.toLowerCase()));
 
   const metrics = [
     { label: 'Win rate', value: `${winPct}%`, width: `${winPct}%`, icon: TrendingUp },
@@ -57,7 +59,12 @@ export default function DeckCard({ deck, rank }: DeckCardProps) {
 
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
             {deck.cards.map((card, idx) => (
-              <div key={`${card}-${idx}`} className="card-token aspect-square">
+              <div
+                key={`${card}-${idx}`}
+                className={`card-token aspect-square ${
+                  requiredCardSet.has(card.toLowerCase()) ? 'border-brand-gold/70 bg-brand-gold/15' : ''
+                }`}
+              >
                 {card}
               </div>
             ))}

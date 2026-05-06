@@ -2,18 +2,19 @@
 Prediction router — deck recommendations and meta trends.
 """
 
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import verify_bff_origin
+from app.dependencies import require_existing_user_id, verify_bff_origin
 from app.ml.explainer import generate_explanation, generate_short_summary
 from app.ml.model import recommender
-from app.models import Player
+from app.models import Card, Player, UserPlayer
 from app.services.tag_utils import build_tag_candidates, normalize_tag_input, to_hash_tag
 
 router = APIRouter()
@@ -25,6 +26,7 @@ router = APIRouter()
 class RecommendRequest(BaseModel):
     player_tag: str
     archetype_preference: Optional[str] = None  # cycle, beatdown, bridge_spam, control, bait
+    required_cards: list[str] = Field(default_factory=list, max_length=8)
 
 
 class CardInfo(BaseModel):
@@ -53,6 +55,85 @@ class PlayerSummary(BaseModel):
 class RecommendResponse(BaseModel):
     recommendations: list[DeckRecommendation]
     player_summary: PlayerSummary
+    required_cards: list[str] = Field(default_factory=list)
+
+
+def _compact_card_alias(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def _slug_card_alias(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+
+def _card_aliases(sc_key: str, name: Optional[str] = None) -> set[str]:
+    values = {sc_key}
+    if name:
+        values.add(name)
+
+    aliases: set[str] = set()
+    for value in values:
+        clean = value.strip().lower()
+        if not clean:
+            continue
+        slug = _slug_card_alias(clean)
+        compact = _compact_card_alias(clean)
+        aliases.update({
+            clean,
+            slug,
+            slug.replace("-", " "),
+            compact,
+        })
+    return aliases
+
+
+def _display_card_name(card_key: str) -> str:
+    return card_key.replace("-", " ").title()
+
+
+async def resolve_required_cards(
+    db: AsyncSession,
+    requested_cards: list[str],
+) -> list[str]:
+    """Resolve user-entered card names into canonical card keys."""
+    alias_to_key: dict[str, str] = {}
+
+    for key in recommender.all_card_keys:
+        for alias in _card_aliases(key):
+            alias_to_key[alias] = key
+
+    result = await db.execute(select(Card.sc_key, Card.name))
+    for sc_key, name in result.all():
+        for alias in _card_aliases(sc_key, name):
+            alias_to_key[alias] = sc_key
+
+    resolved: list[str] = []
+    unknown: list[str] = []
+
+    for raw_card in requested_cards:
+        raw_card = raw_card.strip()
+        if not raw_card:
+            continue
+
+        key = None
+        for alias in _card_aliases(raw_card):
+            if alias in alias_to_key:
+                key = alias_to_key[alias]
+                break
+
+        if key is None:
+            unknown.append(raw_card)
+        elif key not in resolved:
+            resolved.append(key)
+
+    if unknown:
+        card_list = ", ".join(unknown)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown required card: {card_list}. Use a Clash Royale card name, such as Hog Rider.",
+        )
+
+    return resolved
 
 
 # --- Endpoints ---
@@ -62,6 +143,7 @@ class RecommendResponse(BaseModel):
 async def recommend_deck(
     request: RecommendRequest,
     db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(require_existing_user_id),
 ) -> RecommendResponse:
     """
     Generate 3 deck recommendations for a player.
@@ -89,6 +171,18 @@ async def recommend_deck(
             detail="Player not found in cache. Call GET /api/players/{tag} first to fetch their data. Use 0, not O.",
         )
 
+    link_result = await db.execute(
+        select(UserPlayer).where(
+            UserPlayer.user_id == user_id,
+            UserPlayer.player_tag == player.tag,
+        )
+    )
+    if link_result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=403,
+            detail="This player profile is not linked to your account. Fetch the player profile first.",
+        )
+
     # Check if model is trained
     if not recommender.is_trained:
         # Try to load from disk
@@ -100,13 +194,21 @@ async def recommend_deck(
 
     # Run recommendation
     card_levels = player.card_levels or {}
+    required_cards = await resolve_required_cards(db, request.required_cards)
     results = recommender.recommend(
         player_card_levels=card_levels,
         archetype_pref=request.archetype_preference,
+        required_cards=required_cards,
         top_k=3,
     )
 
     if not results:
+        if required_cards:
+            required_display = ", ".join(_display_card_name(card) for card in required_cards)
+            raise HTTPException(
+                status_code=404,
+                detail=f"No deck recommendations available with {required_display}. Try another card or remove the optional card filter.",
+            )
         raise HTTPException(
             status_code=404,
             detail="No deck recommendations available. The model may need more training data.",
@@ -124,12 +226,13 @@ async def recommend_deck(
             player_card_levels=card_levels,
             player_trophies=player.trophies,
             archetype_pref=request.archetype_preference,
+            required_cards=required_cards,
             synergy_map=recommender.synergy_map,
         )
 
         short = generate_short_summary(deck, scores)
 
-        card_names = [k.replace("-", " ").title() for k in deck.get("card_keys", [])]
+        card_names = [_display_card_name(k) for k in deck.get("card_keys", [])]
 
         recommendations.append(DeckRecommendation(
             cards=card_names,
@@ -154,6 +257,7 @@ async def recommend_deck(
     return RecommendResponse(
         recommendations=recommendations,
         player_summary=player_summary,
+        required_cards=[_display_card_name(card) for card in required_cards],
     )
 
 

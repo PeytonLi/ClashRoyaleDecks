@@ -19,6 +19,7 @@ def generate_explanation(
     player_card_levels: dict[str, int],
     player_trophies: int,
     archetype_pref: Optional[str],
+    required_cards: Optional[list[str]],
     synergy_map: dict[tuple, float],
 ) -> str:
     """
@@ -30,6 +31,7 @@ def generate_explanation(
         player_card_levels: Player's card levels
         player_trophies: Player's current trophies
         archetype_pref: Player's archetype preference (if any)
+        required_cards: Card keys the user asked to include (if any)
         synergy_map: Card pair synergy scores
 
     Returns:
@@ -108,6 +110,12 @@ def generate_explanation(
                 f"While you prefer {archetype_pref.replace('_', ' ')}, this {archetype_display} "
                 f"deck scored highly due to your card levels and its meta performance."
             )
+
+    if required_cards:
+        required_display = ", ".join(card.replace("-", " ").title() for card in required_cards)
+        parts.append(
+            f"It includes {required_display}, matching your optional card preference."
+        )
 
     # 4. Key synergies (top 2 card pairs)
     pair_synergies = []

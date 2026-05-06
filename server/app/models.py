@@ -10,6 +10,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Float,
+    ForeignKey,
     Integer,
     String,
     Text,
@@ -35,6 +36,9 @@ class Card(Base):
     arena_unlock: Mapped[int] = mapped_column(Integer, default=0, comment="Arena number where card unlocks")
     icon_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     max_level: Mapped[int] = mapped_column(Integer, default=14)
+    supports_evolution: Mapped[bool] = mapped_column(Boolean, default=False)
+    supports_hero: Mapped[bool] = mapped_column(Boolean, default=False)
+    base_sc_key: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     def __repr__(self) -> str:
         return f"<Card(name='{self.name}', elixir={self.elixir}, rarity='{self.rarity}')>"
@@ -48,6 +52,7 @@ class MetaDeck(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     deck_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, comment="SHA256 of sorted card keys for dedup")
     card_keys: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, comment="Array of 8 card sc_keys")
+    deck_slots: Mapped[list[dict]] = mapped_column(JSONB, default=list, comment="8 slots with card_key, form, and slot_type")
     archetype: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, comment="cycle, beatdown, bridge_spam, control, bait")
     win_rate: Mapped[float] = mapped_column(Float, default=0.0)
     usage_rate: Mapped[float] = mapped_column(Float, default=0.0)
@@ -77,10 +82,51 @@ class Player(Base):
     exp_level: Mapped[int] = mapped_column(Integer, default=1)
     card_levels: Mapped[dict] = mapped_column(JSONB, default=dict, comment="{ 'hog-rider': 14, 'fireball': 13, ... }")
     cards_owned: Mapped[list[str]] = mapped_column(ARRAY(String), default=list, comment="List of card sc_keys the player owns")
+    special_card_unlocks: Mapped[dict] = mapped_column(JSONB, default=dict, comment="{ evolutions: [], heroes: [], champions: [] }")
     last_fetched: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self) -> str:
         return f"<Player(tag='{self.tag}', name='{self.name}', trophies={self.trophies})>"
+
+
+class User(Base):
+    """Application account used for login, ownership, and per-user quota."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    google_sub: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email='{self.email}')>"
+
+
+class UserPlayer(Base):
+    """User-owned link to a cached Clash Royale player profile."""
+
+    __tablename__ = "user_players"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    player_tag: Mapped[str] = mapped_column(ForeignKey("players.tag", ondelete="CASCADE"), nullable=False)
+    linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "player_tag", name="uq_user_player"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<UserPlayer(user_id={self.user_id}, player_tag='{self.player_tag}')>"
 
 
 class UsageTracking(Base):

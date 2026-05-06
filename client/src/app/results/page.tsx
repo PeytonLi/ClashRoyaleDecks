@@ -29,6 +29,7 @@ interface PlayerSummary {
 interface RecommendResponse {
   recommendations: DeckRecommendation[];
   player_summary: PlayerSummary;
+  required_cards?: string[];
 }
 
 function ResultsLoading() {
@@ -84,6 +85,7 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const tag = searchParams.get('tag') || '';
   const archetype = searchParams.get('archetype') || '';
+  const requiredCard = searchParams.get('required_card') || '';
 
   const [data, setData] = useState<RecommendResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +100,13 @@ function ResultsContent() {
 
     const fetchRecommendations = async () => {
       try {
-        const body: Record<string, string> = { player_tag: `#${tag}` };
+        const body: {
+          player_tag: string;
+          archetype_preference?: string;
+          required_cards?: string[];
+        } = { player_tag: `#${tag}` };
         if (archetype) body.archetype_preference = archetype;
+        if (requiredCard.trim()) body.required_cards = [requiredCard.trim()];
 
         const res = await fetch('/api/recommend', {
           method: 'POST',
@@ -126,7 +133,7 @@ function ResultsContent() {
     };
 
     fetchRecommendations();
-  }, [tag, archetype]);
+  }, [tag, archetype, requiredCard]);
 
   if (loading) return <ResultsLoading />;
 
@@ -134,7 +141,7 @@ function ResultsContent() {
     return (
       <EmptyState
         title="Free limit reached"
-        message="You have used the available free recommendations for this network. Premium access is planned for unlimited scans."
+        message="You have used the available free recommendations for this account. Premium access is planned for unlimited scans."
         payment
       />
     );
@@ -145,6 +152,12 @@ function ResultsContent() {
   }
 
   if (!data) return null;
+
+  const requiredCards = data.required_cards?.length
+    ? data.required_cards
+    : requiredCard.trim()
+      ? [requiredCard.trim()]
+      : [];
 
   return (
     <main className="grow py-8">
@@ -169,14 +182,20 @@ function ResultsContent() {
             </h1>
           </div>
           <p className="max-w-sm text-sm leading-6 text-text-muted">
-            Scores combine collection fit, synergy, ladder performance, and optional archetype preference.
+            Scores combine collection fit, synergy, ladder performance, and optional preferences.
           </p>
         </div>
+
+        {requiredCards.length > 0 && (
+          <div className="mb-5 rounded-[8px] border border-brand-gold/30 bg-brand-gold/10 px-4 py-3 text-sm font-semibold text-text-secondary">
+            Every recommendation includes {requiredCards.join(', ')}.
+          </div>
+        )}
 
         <div className="grid gap-5">
           {data.recommendations.map((deck, idx) => (
             <div key={`${deck.short_summary}-${idx}`} className={`animate-fade-in-up-delay-${idx + 1}`}>
-              <DeckCard deck={deck} rank={idx + 1} />
+              <DeckCard deck={deck} rank={idx + 1} requiredCards={requiredCards} />
             </div>
           ))}
         </div>

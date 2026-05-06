@@ -126,13 +126,16 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
 @pytest_asyncio.fixture
 async def cleaned_db(db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
     """Database session with cleaned tables before test."""
-    from app.models import Card, MetaDeck, CardSynergy, Player
+    from app.models import Card, MetaDeck, CardSynergy, Player, UsageTracking, User, UserPlayer
     
     # Delete all records from all tables
+    await db_session.execute(delete(UserPlayer))
+    await db_session.execute(delete(UsageTracking))
     await db_session.execute(delete(CardSynergy))
     await db_session.execute(delete(MetaDeck))
     await db_session.execute(delete(Card))
     await db_session.execute(delete(Player))
+    await db_session.execute(delete(User))
     await db_session.commit()
     
     yield db_session
