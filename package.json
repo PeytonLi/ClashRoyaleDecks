@@ -1,0 +1,14 @@
+{
+  "name": "clash-royale-decks",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "dev": "pnpm run dev:services && pnpm --dir client dev",
+    "dev:client": "pnpm --dir client dev",
+    "dev:services": "docker compose up -d --build",
+    "dev:logs": "docker compose logs -f api db",
+    "dev:stop": "docker compose down",
+    "build": "pnpm --dir client build",
+    "lint": "pnpm --dir client lint"
+  }
+}
