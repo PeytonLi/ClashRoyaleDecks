@@ -220,6 +220,87 @@ async def test_recommend_endpoint_passes_optional_required_card(
     data = response.json()
     assert data["required_cards"] == ["Hog Rider"]
     assert "Hog Rider" in data["recommendations"][0]["cards"]
+    assert data["recommendations"][0]["slots"][0]["form"] == "base"
+
+
+@pytest.mark.asyncio
+async def test_recommend_endpoint_returns_special_slots_for_form_required_card(
+    async_client: AsyncClient,
+    cleaned_db: AsyncSession,
+):
+    """Form-aware required cards should be resolved and returned with slot metadata."""
+    headers = await _auth_headers(cleaned_db)
+    user_id = int(headers["X-User-Id"])
+    deck_cards = [
+        "firecracker",
+        "hog-rider",
+        "the-log",
+        "ice-spirit",
+        "skeletons",
+        "cannon",
+        "musketeer",
+        "knight",
+    ]
+    deck_slots = [
+        {"card_key": "firecracker", "form": "evolution", "slot_type": "evolution"},
+        *[{"card_key": key, "form": "base", "slot_type": "normal"} for key in deck_cards[1:]],
+    ]
+    cleaned_db.add(Player(
+        tag="#GGCQ2PJV",
+        name="Evo Player",
+        trophies=6000,
+        best_trophies=6200,
+        arena_id=54000010,
+        arena_name="League 1",
+        exp_level=50,
+        card_levels={key: 14 for key in deck_cards},
+        cards_owned=deck_cards,
+        special_card_unlocks={"evolutions": ["firecracker"], "heroes": [], "champions": []},
+    ))
+    cleaned_db.add(UserPlayer(user_id=user_id, player_tag="#GGCQ2PJV"))
+    await cleaned_db.commit()
+
+    deck = {
+        "card_keys": deck_cards,
+        "deck_slots": deck_slots,
+        "archetype": "cycle",
+        "win_rate": 0.58,
+        "avg_elixir": 2.8,
+        "source": "test",
+        "sample_size": 12,
+    }
+
+    with patch("app.routers.predict.recommender.is_trained", True), \
+        patch("app.routers.predict.recommender.all_card_keys", deck_cards), \
+        patch("app.routers.predict.recommender.recommend", return_value=[{
+            "deck": deck,
+            "scores": {
+                "overall": 0.91,
+                "cf": 0.5,
+                "cb": 0.5,
+                "level_fit": 0.85,
+                "win_rate": 0.7,
+            },
+        }]) as mock_recommend:
+        response = await async_client.post(
+            "/api/predict/recommend",
+            json={"player_tag": "#GGCQ2PJV", "required_cards": ["Evo Firecracker"]},
+            headers=headers,
+        )
+
+    assert response.status_code == 200
+    assert mock_recommend.call_args.kwargs["required_cards"] == [
+        {"card_key": "firecracker", "form": "evolution"}
+    ]
+    assert mock_recommend.call_args.kwargs["player_special_unlocks"]["evolutions"] == ["firecracker"]
+    data = response.json()
+    assert data["required_cards"] == ["Evolution Firecracker"]
+    assert data["recommendations"][0]["slots"][0] == {
+        "card": "Firecracker",
+        "card_key": "firecracker",
+        "form": "evolution",
+        "slot_type": "evolution",
+    }
 
 
 def test_recommender_filters_to_required_cards():
