@@ -3,7 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
-    "dev": "pnpm run dev:services && pnpm --dir client dev",
+    "dev": "pnpm run dev:install && pnpm run dev:services && pnpm --dir client dev",
+    "dev:install": "pnpm --dir client install",
     "dev:client": "pnpm --dir client dev",
     "dev:services": "docker compose up -d --build",
     "dev:logs": "docker compose logs -f api db",
