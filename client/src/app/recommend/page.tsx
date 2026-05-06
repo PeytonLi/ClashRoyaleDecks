@@ -103,7 +103,7 @@ export default function RecommendPage() {
                 Player Tag
               </label>
               <div className="relative">
-                <span className="font-display absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-brand-gold">
+                <span className="font-display pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-brand-gold">
                   #
                 </span>
                 <input
@@ -112,7 +112,7 @@ export default function RecommendPage() {
                   value={playerTag}
                   onChange={(e) => setPlayerTag(e.target.value.toUpperCase())}
                   placeholder="ABC123XY"
-                  className="input-field pl-9 pr-12 font-display uppercase tracking-[0.12em]"
+                  className="input-field player-tag-input font-display uppercase tracking-[0.12em]"
                   maxLength={15}
                   autoComplete="off"
                   autoFocus

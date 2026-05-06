@@ -226,6 +226,11 @@ select {
   box-shadow: 0 0 0 4px rgba(245, 181, 63, 0.12);
 }
 
+.player-tag-input {
+  padding-left: 2.75rem;
+  padding-right: 3rem;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
