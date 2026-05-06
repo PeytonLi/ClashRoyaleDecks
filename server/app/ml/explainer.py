@@ -12,6 +12,13 @@ Produces detailed, human-readable explanations covering:
 from itertools import combinations
 from typing import Optional
 
+from app.services.deck_forms import (
+    FORM_BASE,
+    display_required_card,
+    display_slot_label,
+    normalize_deck_slots,
+)
+
 
 def generate_explanation(
     deck: dict,
@@ -112,9 +119,24 @@ def generate_explanation(
             )
 
     if required_cards:
-        required_display = ", ".join(card.replace("-", " ").title() for card in required_cards)
+        required_display = ", ".join(display_required_card(card) for card in required_cards)
         parts.append(
             f"It includes {required_display}, matching your optional card preference."
+        )
+
+    try:
+        special_slots = [
+            slot
+            for slot in normalize_deck_slots(card_keys, deck.get("deck_slots"))
+            if slot["form"] != FORM_BASE
+        ]
+    except ValueError:
+        special_slots = []
+
+    if special_slots:
+        special_display = ", ".join(display_slot_label(slot) for slot in special_slots)
+        parts.append(
+            f"Active special forms are playable for this profile: {special_display}."
         )
 
     # 4. Key synergies (top 2 card pairs)
