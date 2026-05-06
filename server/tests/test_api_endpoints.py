@@ -214,7 +214,9 @@ async def test_recommend_endpoint_passes_optional_required_card(
         )
 
     assert response.status_code == 200
-    assert mock_recommend.call_args.kwargs["required_cards"] == ["hog-rider"]
+    assert mock_recommend.call_args.kwargs["required_cards"] == [
+        {"card_key": "hog-rider", "form": None}
+    ]
     data = response.json()
     assert data["required_cards"] == ["Hog Rider"]
     assert "Hog Rider" in data["recommendations"][0]["cards"]
@@ -225,12 +227,30 @@ def test_recommender_filters_to_required_cards():
     model = DeckRecommender()
     model.meta_decks = [
         {
-            "card_keys": ["giant", "fireball"],
+            "card_keys": [
+                "giant",
+                "fireball",
+                "the-log",
+                "ice-spirit",
+                "skeletons",
+                "cannon",
+                "musketeer",
+                "knight",
+            ],
             "archetype": "beatdown",
             "win_rate": 0.99,
         },
         {
-            "card_keys": ["hog-rider", "fireball"],
+            "card_keys": [
+                "hog-rider",
+                "fireball",
+                "the-log",
+                "ice-spirit",
+                "skeletons",
+                "cannon",
+                "musketeer",
+                "knight",
+            ],
             "archetype": "cycle",
             "win_rate": 0.5,
         },
