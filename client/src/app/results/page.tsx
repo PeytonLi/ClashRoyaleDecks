@@ -8,8 +8,16 @@ import DeckCard from '../../components/DeckCard';
 import PlayerCard from '../../components/PlayerCard';
 import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 
+interface DeckSlot {
+  card: string;
+  card_key: string;
+  form: 'base' | 'evolution' | 'hero' | 'champion';
+  slot_type: 'normal' | 'evolution' | 'hero' | 'wild';
+}
+
 interface DeckRecommendation {
   cards: string[];
+  slots?: DeckSlot[];
   archetype: string;
   win_rate: number;
   level_fit_score: number;
