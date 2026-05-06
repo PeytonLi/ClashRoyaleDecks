@@ -5,7 +5,7 @@ Players router — fetch and cache player profiles from the Clash Royale API.
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +30,7 @@ class PlayerResponse(BaseModel):
     exp_level: int
     card_levels: dict[str, int]
     cards_owned: list[str]
+    special_card_unlocks: dict[str, list[str]] = Field(default_factory=dict)
     cached: bool = False
 
 
@@ -44,6 +45,7 @@ def _response_from_cached_player(cached_player: Player, cached: bool) -> PlayerR
         exp_level=cached_player.exp_level,
         card_levels=cached_player.card_levels,
         cards_owned=cached_player.cards_owned,
+        special_card_unlocks=cached_player.special_card_unlocks or {},
         cached=cached,
     )
 
@@ -59,6 +61,7 @@ def _response_from_api_data(resolved_tag: str, player_data: dict) -> PlayerRespo
         exp_level=player_data["exp_level"],
         card_levels=player_data["card_levels"],
         cards_owned=player_data["cards_owned"],
+        special_card_unlocks=player_data.get("special_card_unlocks", {}),
         cached=False,
     )
 
@@ -130,6 +133,7 @@ async def get_player(
             cached_player.exp_level = player_data["exp_level"]
             cached_player.card_levels = player_data["card_levels"]
             cached_player.cards_owned = player_data["cards_owned"]
+            cached_player.special_card_unlocks = player_data.get("special_card_unlocks", {})
             cached_player.last_fetched = now
         else:
             db.add(Player(
@@ -142,6 +146,7 @@ async def get_player(
                 exp_level=player_data["exp_level"],
                 card_levels=player_data["card_levels"],
                 cards_owned=player_data["cards_owned"],
+                special_card_unlocks=player_data.get("special_card_unlocks", {}),
                 last_fetched=now,
             ))
 

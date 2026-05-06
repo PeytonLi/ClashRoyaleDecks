@@ -20,6 +20,14 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import normalize
 
+from app.services.deck_forms import (
+    base_card_keys_from_slots,
+    deck_is_playable,
+    normalize_deck_slots,
+    normalize_required_card_specs,
+    required_spec_matches_deck,
+)
+
 logger = logging.getLogger(__name__)
 
 # Default hybrid weights
@@ -55,6 +63,7 @@ class DeckRecommender:
         self.synergy_map: dict[tuple, float] = {} # (card_a, card_b) -> score
         self.all_card_keys: list[str] = []       # Ordered list of all card keys
         self.card_to_idx: dict[str, int] = {}    # Card key -> matrix index
+        self.card_max_levels: dict[str, int] = {}
 
         # SVD matrices (populated after training)
         self.deck_vectors: Optional[np.ndarray] = None  # meta_decks projected into latent space
@@ -64,6 +73,7 @@ class DeckRecommender:
         meta_decks: list[dict],
         synergies: list[dict],
         all_card_keys: list[str],
+        card_max_levels: Optional[dict[str, int]] = None,
     ):
         """
         Load data from the database into the model.
@@ -73,9 +83,22 @@ class DeckRecommender:
             synergies: List of dicts with keys: card_a_key, card_b_key, synergy_score
             all_card_keys: Ordered list of all card keys in the game
         """
-        self.meta_decks = meta_decks
+        self.meta_decks = []
+        for deck in meta_decks:
+            try:
+                deck_slots = normalize_deck_slots(deck.get("card_keys", []), deck.get("deck_slots"))
+            except ValueError as exc:
+                logger.warning(f"Skipping illegal model deck: {exc}")
+                continue
+
+            normalized_deck = dict(deck)
+            normalized_deck["card_keys"] = base_card_keys_from_slots(deck_slots)
+            normalized_deck["deck_slots"] = deck_slots
+            self.meta_decks.append(normalized_deck)
+
         self.all_card_keys = all_card_keys
         self.card_to_idx = {key: i for i, key in enumerate(all_card_keys)}
+        self.card_max_levels = card_max_levels or {key: 14 for key in all_card_keys}
 
         # Build synergy lookup
         self.synergy_map = {}
@@ -134,7 +157,8 @@ class DeckRecommender:
         for card_key, level in player_card_levels.items():
             idx = self.card_to_idx.get(card_key)
             if idx is not None:
-                player_vec[0, idx] = level / 14.0  # Normalize by max level
+                max_level = self.card_max_levels.get(card_key, 14) or 14
+                player_vec[0, idx] = level / max_level  # Normalize by max level
 
         # Project into latent space
         if hasattr(self.svd, 'components_'):
@@ -197,7 +221,8 @@ class DeckRecommender:
                     level_ratios.append(0.0)
                     penalty += 0.15  # Significant penalty
                 else:
-                    ratio = player_level / 14.0
+                    max_level = self.card_max_levels.get(card_key, 14) or 14
+                    ratio = player_level / max_level
                     level_ratios.append(ratio)
                     if player_level <= 11:  # Underleveled by ≥3
                         penalty += 0.05
@@ -215,7 +240,9 @@ class DeckRecommender:
         self,
         player_card_levels: dict[str, int],
         archetype_pref: Optional[str] = None,
-        required_cards: Optional[list[str]] = None,
+        required_cards: Optional[list] = None,
+        player_special_unlocks: Optional[dict] = None,
+        player_trophies: int = 0,
         top_k: int = 3,
     ) -> list[dict]:
         """
@@ -261,13 +288,30 @@ class DeckRecommender:
             w["win_rate"] * wr_norm
         )
 
-        required_set = {card for card in (required_cards or []) if card}
+        required_specs = normalize_required_card_specs(required_cards)
         candidate_indices = np.arange(len(self.meta_decks))
-        if required_set:
+        if required_specs:
             candidate_indices = np.array([
                 idx for idx, deck in enumerate(self.meta_decks)
-                if required_set.issubset(set(deck.get("card_keys", [])))
+                if all(
+                    required_spec_matches_deck(
+                        spec,
+                        deck.get("card_keys", []),
+                        deck.get("deck_slots"),
+                    )
+                    for spec in required_specs
+                )
             ])
+
+        candidate_indices = np.array([
+            idx for idx in candidate_indices
+            if deck_is_playable(
+                self.meta_decks[idx].get("card_keys", []),
+                self.meta_decks[idx].get("deck_slots"),
+                player_special_unlocks,
+                player_trophies,
+            )
+        ])
 
         if candidate_indices.size == 0:
             return []
@@ -309,6 +353,7 @@ class DeckRecommender:
             "synergy_map": self.synergy_map,
             "all_card_keys": self.all_card_keys,
             "card_to_idx": self.card_to_idx,
+            "card_max_levels": self.card_max_levels,
             "deck_vectors": self.deck_vectors,
             "svd": self.svd if self.is_trained else None,
             "is_trained": self.is_trained,
@@ -335,6 +380,18 @@ class DeckRecommender:
             self.synergy_map = model_data["synergy_map"]
             self.all_card_keys = model_data["all_card_keys"]
             self.card_to_idx = model_data["card_to_idx"]
+            self.card_max_levels = model_data.get("card_max_levels") or {
+                key: 14 for key in self.all_card_keys
+            }
+            normalized_decks = []
+            for deck in self.meta_decks:
+                deck_slots = normalize_deck_slots(deck.get("card_keys", []), deck.get("deck_slots"))
+                normalized_decks.append({
+                    **deck,
+                    "card_keys": base_card_keys_from_slots(deck_slots),
+                    "deck_slots": deck_slots,
+                })
+            self.meta_decks = normalized_decks
             self.deck_vectors = model_data["deck_vectors"]
             if model_data.get("svd"):
                 self.svd = model_data["svd"]
