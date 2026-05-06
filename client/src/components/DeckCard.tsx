@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, TrendingUp, Shield, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, Shield, Sparkles, TrendingUp } from 'lucide-react';
 
 interface DeckRecommendation {
   cards: string[];
@@ -18,116 +18,90 @@ interface DeckCardProps {
   rank: number;
 }
 
+function pct(value: number, digits = 0) {
+  return Math.max(0, Math.min(100, value * 100)).toFixed(digits);
+}
+
 export default function DeckCard({ deck, rank }: DeckCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const winPct = (deck.win_rate * 100).toFixed(1);
-  const levelPct = (deck.level_fit_score * 100).toFixed(0);
-  const overallPct = (deck.overall_score * 100).toFixed(0);
-
+  const winPct = pct(deck.win_rate, 1);
+  const levelPct = pct(deck.level_fit_score);
+  const overallPct = pct(deck.overall_score);
   const archetypeClass = `badge badge-${deck.archetype.replace('_', '-')}`;
 
-  return (
-    <div className="glass-card overflow-hidden">
-      {/* Header bar */}
-      <div className="bg-gradient-card px-6 py-4 flex items-center justify-between border-b border-border-subtle">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-hero flex items-center justify-center text-sm font-bold text-white">
-            {rank}
-          </div>
-          <div>
-            <div className="font-bold text-text-primary">{deck.short_summary}</div>
-          </div>
-        </div>
-        <span className={archetypeClass}>
-          {deck.archetype.replace('_', ' ')}
-        </span>
-      </div>
+  const metrics = [
+    { label: 'Win rate', value: `${winPct}%`, width: `${winPct}%`, icon: TrendingUp },
+    { label: 'Level fit', value: `${levelPct}%`, width: `${levelPct}%`, icon: Shield },
+    { label: 'Overall', value: `${overallPct}%`, width: `${overallPct}%`, icon: Sparkles },
+  ];
 
-      {/* Cards grid */}
-      <div className="px-6 py-5">
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-          {deck.cards.map((card, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-full aspect-square rounded-xl bg-surface-elevated border border-border-subtle
-                flex items-center justify-center text-xs text-text-secondary font-medium
-                hover:border-brand-red/30 hover:bg-surface-card-hover transition-all duration-200 cursor-default">
-                <span className="text-center leading-tight px-1 text-[0.65rem]">
-                  {card}
-                </span>
+  return (
+    <article className="glass-card overflow-hidden">
+      <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_280px]">
+        <div>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="font-display grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-gradient-hero text-base font-bold text-brand-ink">
+                {rank}
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-display text-xl font-bold leading-tight text-text-primary">
+                  {deck.short_summary}
+                </h3>
+                <p className="mt-1 text-sm text-text-muted">Ranked recommendation</p>
               </div>
             </div>
-          ))}
+            <span className={archetypeClass}>{deck.archetype.replace('_', ' ')}</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+            {deck.cards.map((card, idx) => (
+              <div key={`${card}-${idx}`} className="card-token aspect-square">
+                {card}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid content-between gap-4 border-t border-border-subtle pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+          <div className="space-y-4">
+            {metrics.map((metric) => {
+              const Icon = metric.icon;
+              return (
+                <div key={metric.label}>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-muted">
+                      <Icon className="h-3.5 w-3.5" />
+                      {metric.label}
+                    </span>
+                    <span className="font-display text-sm font-bold text-text-primary">{metric.value}</span>
+                  </div>
+                  <div className="score-bar">
+                    <div className="score-bar-fill" style={{ width: metric.width }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setExpanded((open) => !open)}
+            className="btn-secondary min-h-11 w-full px-4 text-sm"
+            aria-expanded={expanded}
+          >
+            {expanded ? 'Hide explanation' : 'Why this deck?'}
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
-      {/* Score bars */}
-      <div className="px-6 pb-5 grid grid-cols-3 gap-4">
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-text-muted flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Win Rate
-            </span>
-            <span className="text-xs font-bold text-accent-green">{winPct}%</span>
-          </div>
-          <div className="score-bar">
-            <div className="score-bar-fill" style={{ width: `${winPct}%` }} />
-          </div>
+      {expanded && (
+        <div className="border-t border-border-subtle bg-surface-card/50 px-4 py-4 sm:px-5">
+          <p className="max-w-4xl text-sm leading-7 text-text-secondary">{deck.explanation}</p>
         </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-text-muted flex items-center gap-1">
-              <Shield className="h-3 w-3" /> Level Fit
-            </span>
-            <span className="text-xs font-bold text-brand-blue">{levelPct}%</span>
-          </div>
-          <div className="score-bar">
-            <div className="score-bar-fill" style={{ width: `${levelPct}%` }} />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-text-muted flex items-center gap-1">
-              <Sparkles className="h-3 w-3" /> Overall
-            </span>
-            <span className="text-xs font-bold text-gradient">{overallPct}%</span>
-          </div>
-          <div className="score-bar">
-            <div className="score-bar-fill" style={{ width: `${overallPct}%` }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Expandable explanation */}
-      <div className="border-t border-border-subtle">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full px-6 py-3 flex items-center justify-between text-sm text-text-secondary
-            hover:bg-surface-card-hover transition-colors cursor-pointer"
-        >
-          <span className="font-medium">
-            {expanded ? 'Hide Details' : 'Why this deck?'}
-          </span>
-          {expanded ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
-
-        {expanded && (
-          <div className="px-6 pb-5 animate-fade-in-up">
-            <p className="text-sm text-text-secondary leading-relaxed">
-              {deck.explanation}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </article>
   );
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import DeckCard from '../../components/DeckCard';
 import PlayerCard from '../../components/PlayerCard';
-import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 
 interface DeckRecommendation {
   cards: string[];
@@ -31,6 +31,55 @@ interface RecommendResponse {
   player_summary: PlayerSummary;
 }
 
+function ResultsLoading() {
+  return (
+    <div className="page-frame flex grow items-center justify-center py-12">
+      <div className="w-full max-w-3xl text-center">
+        <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-[8px] bg-gradient-hero">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-ink" />
+        </div>
+        <h2 className="font-display text-3xl font-bold text-text-primary">Scoring deck candidates</h2>
+        <p className="mt-2 text-text-secondary">Comparing your profile against current meta patterns.</p>
+
+        <div className="mt-10 grid gap-4">
+          <div className="h-32 rounded-[8px] border border-border-subtle animate-shimmer" />
+          <div className="h-32 rounded-[8px] border border-border-subtle animate-shimmer" />
+          <div className="h-32 rounded-[8px] border border-border-subtle animate-shimmer" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ title, message, payment }: { title: string; message: string; payment?: boolean }) {
+  return (
+    <div className="page-frame flex grow items-center justify-center py-12">
+      <div className="arena-panel max-w-lg p-6 text-center">
+        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-[8px] border border-border-subtle bg-surface-card">
+          <AlertCircle className="h-7 w-7 text-brand-gold" />
+        </div>
+        <h2 className="font-display text-3xl font-bold text-text-primary">{title}</h2>
+        <p className="mt-3 leading-7 text-text-secondary">{message}</p>
+        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link href="/recommend" className="btn-primary px-5">
+            <RefreshCw className="h-4 w-4" />
+            New scan
+          </Link>
+          {payment ? (
+            <Link href="/payment" className="btn-secondary px-5">
+              View premium
+            </Link>
+          ) : (
+            <Link href="/" className="btn-secondary px-5">
+              Home
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ResultsContent() {
   const searchParams = useSearchParams();
   const tag = searchParams.get('tag') || '';
@@ -42,7 +91,7 @@ function ResultsContent() {
 
   useEffect(() => {
     if (!tag) {
-      setError('No player tag provided');
+      setError('No player tag provided.');
       setLoading(false);
       return;
     }
@@ -69,7 +118,7 @@ function ResultsContent() {
         const result = await res.json();
         setData(result);
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to load recommendations';
+        const message = err instanceof Error ? err.message : 'Failed to load recommendations.';
         setError(message);
       } finally {
         setLoading(false);
@@ -79,106 +128,54 @@ function ResultsContent() {
     fetchRecommendations();
   }, [tag, archetype]);
 
-  if (loading) {
-    return (
-      <div className="grow flex items-center justify-center">
-        <div className="text-center animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-hero mb-6">
-            <Loader2 className="h-8 w-8 text-white animate-spin" />
-          </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Analyzing your profile...</h2>
-          <p className="text-text-secondary">Running ML model against top meta decks</p>
-
-          {/* Shimmer skeleton */}
-          <div className="mt-10 max-w-md mx-auto space-y-4">
-            <div className="h-40 rounded-xl bg-surface-card animate-shimmer" />
-            <div className="h-40 rounded-xl bg-surface-card animate-shimmer" />
-            <div className="h-40 rounded-xl bg-surface-card animate-shimmer" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <ResultsLoading />;
 
   if (error === 'FREE_LIMIT_REACHED') {
     return (
-      <div className="grow flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-card border border-border-subtle mb-6">
-            <AlertCircle className="h-8 w-8 text-accent-yellow" />
-          </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Free Limit Reached</h2>
-          <p className="text-text-secondary mb-4">
-            You&apos;ve used your free recommendations. Premium with unlimited access is coming soon!
-          </p>
-          <p className="text-sm text-text-muted mb-8">
-            We&apos;re working on a premium tier. Stay tuned for updates.
-          </p>
-          <Link href="/recommend" className="btn-primary text-lg py-3.5! px-10!">
-            Back to Search
-          </Link>
-          <div className="mt-4">
-            <Link href="/" className="text-sm text-text-muted hover:text-text-secondary transition-colors">
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
+      <EmptyState
+        title="Free limit reached"
+        message="You have used the available free recommendations for this network. Premium access is planned for unlimited scans."
+        payment
+      />
     );
   }
 
   if (error) {
-    return (
-      <div className="grow flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[rgba(230,57,70,0.1)] mb-6">
-            <AlertCircle className="h-8 w-8 text-brand-red" />
-          </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Something went wrong</h2>
-          <p className="text-text-secondary mb-8">{error}</p>
-          <Link href="/recommend" className="btn-primary">
-            Try Again
-          </Link>
-        </div>
-      </div>
-    );
+    return <EmptyState title="Scan failed" message={error} />;
   }
 
   if (!data) return null;
 
   return (
-    <main className="grow py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Back link */}
+    <main className="grow py-8">
+      <div className="page-frame">
         <Link
           href="/recommend"
-          className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text-secondary transition-colors mb-6"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-text-muted transition-colors hover:text-text-secondary"
         >
           <ArrowLeft className="h-4 w-4" />
-          New search
+          New scan
         </Link>
 
-        {/* Player summary */}
-        <div className="animate-fade-in-up mb-8">
+        <div className="animate-fade-in-up">
           <PlayerCard player={data.player_summary} tag={tag} />
         </div>
 
-        {/* Recommendations */}
-        <div className="mb-6 animate-fade-in-up">
-          <h2 className="text-2xl font-bold text-text-primary">
-            Your Recommendations
-          </h2>
-          <p className="text-text-secondary mt-1">
-            3 decks optimized for your card levels and preferences
+        <div className="my-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <div className="eyebrow mb-3">Recommendations</div>
+            <h1 className="font-display text-3xl font-bold text-text-primary md:text-4xl">
+              Three decks ranked for this profile
+            </h1>
+          </div>
+          <p className="max-w-sm text-sm leading-6 text-text-muted">
+            Scores combine collection fit, synergy, ladder performance, and optional archetype preference.
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid gap-5">
           {data.recommendations.map((deck, idx) => (
-            <div
-              key={idx}
-              className={`animate-fade-in-up-delay-${idx + 1}`}
-            >
+            <div key={`${deck.short_summary}-${idx}`} className={`animate-fade-in-up-delay-${idx + 1}`}>
               <DeckCard deck={deck} rank={idx + 1} />
             </div>
           ))}
@@ -190,13 +187,9 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <Suspense fallback={
-        <div className="grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-brand-red animate-spin" />
-        </div>
-      }>
+      <Suspense fallback={<ResultsLoading />}>
         <ResultsContent />
       </Suspense>
     </div>
