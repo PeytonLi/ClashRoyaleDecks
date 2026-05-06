@@ -91,7 +91,7 @@ async def ensure_schema_compatibility(conn):
                 ),
                 '[]'::jsonb
             )
-            FROM unnest(card_keys) AS card_key
+            FROM unnest(card_keys) AS cards(card_key)
         )
         WHERE deck_slots = '[]'::jsonb OR deck_slots IS NULL
         """
