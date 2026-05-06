@@ -27,6 +27,7 @@ async def retrain_model(db: AsyncSession):
     result = await db.execute(select(Card).order_by(Card.sc_key))
     cards = result.scalars().all()
     all_card_keys = [c.sc_key for c in cards]
+    card_max_levels = {c.sc_key: c.max_level for c in cards}
 
     if not all_card_keys:
         logger.warning("No cards in database — cannot train model")
@@ -38,6 +39,7 @@ async def retrain_model(db: AsyncSession):
     meta_decks = [
         {
             "card_keys": d.card_keys,
+            "deck_slots": d.deck_slots,
             "archetype": d.archetype,
             "win_rate": d.win_rate,
             "usage_rate": d.usage_rate,
@@ -68,7 +70,7 @@ async def retrain_model(db: AsyncSession):
     ]
 
     # 4. Load data into model and train
-    recommender.load_data(meta_decks, synergies, all_card_keys)
+    recommender.load_data(meta_decks, synergies, all_card_keys, card_max_levels)
     recommender.train()
 
     # 5. Save

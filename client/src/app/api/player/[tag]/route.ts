@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE = process.env.FASTAPI_URL || 'http://localhost:8000';
+import { auth } from '@/auth';
+import { API_BASE, bffHeaders } from '@/lib/backend';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tag: string }> }
 ) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
   const { tag } = await params;
 
   try {
     const res = await fetch(`${API_BASE}/api/players/${encodeURIComponent(tag)}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: bffHeaders(userId),
       cache: 'no-store',
     });
 

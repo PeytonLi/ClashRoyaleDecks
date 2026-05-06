@@ -49,3 +49,5 @@ server/app/ml/artifacts/*.pkl
 .claude/
 .gemini/
 .cursor/
+.rocketride/
+.gstack/

@@ -3,8 +3,16 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Shield, Sparkles, TrendingUp } from 'lucide-react';
 
+interface DeckSlot {
+  card: string;
+  card_key: string;
+  form: 'base' | 'evolution' | 'hero' | 'champion';
+  slot_type: 'normal' | 'evolution' | 'hero' | 'wild';
+}
+
 interface DeckRecommendation {
   cards: string[];
+  slots?: DeckSlot[];
   archetype: string;
   win_rate: number;
   level_fit_score: number;
@@ -16,19 +24,63 @@ interface DeckRecommendation {
 interface DeckCardProps {
   deck: DeckRecommendation;
   rank: number;
+  requiredCards?: string[];
 }
 
 function pct(value: number, digits = 0) {
   return Math.max(0, Math.min(100, value * 100)).toFixed(digits);
 }
 
-export default function DeckCard({ deck, rank }: DeckCardProps) {
+function slotBadge(slot: DeckSlot) {
+  if (slot.form === 'base') return null;
+
+  const label = {
+    evolution: 'Evo',
+    hero: 'Hero',
+    champion: 'Champ',
+  }[slot.form];
+
+  const color = {
+    evolution: 'bg-brand-cyan text-brand-ink',
+    hero: 'bg-brand-gold text-brand-ink',
+    champion: 'bg-brand-red text-text-primary',
+  }[slot.form];
+
+  return (
+    <div className="absolute right-1 top-1 flex flex-col items-end gap-1">
+      <span className={`rounded px-1.5 py-0.5 text-[0.56rem] font-black uppercase leading-none ${color}`}>
+        {label}
+      </span>
+      {slot.slot_type === 'wild' && (
+        <span className="rounded border border-border-subtle bg-surface-primary/90 px-1.5 py-0.5 text-[0.52rem] font-black uppercase leading-none text-text-secondary">
+          Wild
+        </span>
+      )}
+    </div>
+  );
+}
+
+export default function DeckCard({ deck, rank, requiredCards = [] }: DeckCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const winPct = pct(deck.win_rate, 1);
   const levelPct = pct(deck.level_fit_score);
   const overallPct = pct(deck.overall_score);
   const archetypeClass = `badge badge-${deck.archetype.replace('_', '-')}`;
+  const requiredCardSet = new Set(
+    requiredCards.flatMap((card) => {
+      const lower = card.toLowerCase();
+      return [lower, lower.replace(/^(evolution|evo|hero|champion|champ)\s+/, '')];
+    }),
+  );
+  const displaySlots = deck.slots?.length
+    ? deck.slots
+    : deck.cards.map((card) => ({
+        card,
+        card_key: card.toLowerCase().replace(/\s+/g, '-'),
+        form: 'base' as const,
+        slot_type: 'normal' as const,
+      }));
 
   const metrics = [
     { label: 'Win rate', value: `${winPct}%`, width: `${winPct}%`, icon: TrendingUp },
@@ -56,9 +108,15 @@ export default function DeckCard({ deck, rank }: DeckCardProps) {
           </div>
 
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {deck.cards.map((card, idx) => (
-              <div key={`${card}-${idx}`} className="card-token aspect-square">
-                {card}
+            {displaySlots.map((slot, idx) => (
+              <div
+                key={`${slot.card_key}-${slot.form}-${idx}`}
+                className={`card-token relative aspect-square ${
+                  requiredCardSet.has(slot.card.toLowerCase()) ? 'border-brand-gold/70 bg-brand-gold/15' : ''
+                }`}
+              >
+                {slotBadge(slot)}
+                <span className={slot.form === 'base' ? '' : 'pt-5'}>{slot.card}</span>
               </div>
             ))}
           </div>

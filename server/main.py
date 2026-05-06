@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import close_db, init_db
 from app.data.scheduler import start_scheduler, stop_scheduler
-from app.routers import decks, players, predict, usage
+from app.routers import auth, decks, players, predict, usage
 
 
 @asynccontextmanager
@@ -58,6 +58,7 @@ async def health_check():
 
 # Include routers
 app.include_router(decks.router, prefix="/api/decks", tags=["decks"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(predict.router, prefix="/api/predict", tags=["predictions"])
 app.include_router(players.router, prefix="/api/players", tags=["players"])
 app.include_router(usage.router, prefix="/api/usage", tags=["usage"])

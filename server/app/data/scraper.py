@@ -21,13 +21,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.data.archetype_classifier import classify_archetype, compute_avg_elixir
 from app.models import Card, CardSynergy, MetaDeck
 from app.services.cr_api import CRApiClient
+from app.services.deck_forms import (
+    base_card_keys_from_slots,
+    deck_has_special_forms,
+    normalize_deck_slots,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def deck_hash(card_keys: list[str]) -> str:
-    """Generate a deterministic hash for a deck (sorted card keys)."""
-    sorted_keys = sorted(card_keys)
+def deck_hash(card_keys: list[str], deck_slots: Optional[list[dict]] = None) -> str:
+    """Generate a deterministic hash for a deck."""
+    slots = normalize_deck_slots(card_keys, deck_slots)
+    if deck_has_special_forms(slots):
+        sorted_keys = sorted(f"{slot['card_key']}:{slot['form']}" for slot in slots)
+    else:
+        sorted_keys = sorted(card_keys)
     return hashlib.sha256(",".join(sorted_keys).encode()).hexdigest()
 
 
@@ -73,6 +82,7 @@ class DeckScraper:
 
                         inserted = await self._upsert_deck(
                             card_keys=team_deck,
+                            deck_slots=battle.get("team_deck_slots"),
                             trophy_range_low=max(0, trophies - 200),
                             trophy_range_high=trophies + 200,
                             source="ladder",
@@ -111,6 +121,7 @@ class DeckScraper:
 
             inserted = await self._upsert_deck(
                 card_keys=card_keys,
+                deck_slots=deck_data.get("deck_slots"),
                 win_rate=deck_data.get("win_rate", 0.0),
                 usage_rate=deck_data.get("usage_rate", 0.0),
                 trophy_range_low=deck_data.get("trophy_range_low", 0),
@@ -129,6 +140,7 @@ class DeckScraper:
     async def _upsert_deck(
         self,
         card_keys: list[str],
+        deck_slots: Optional[list[dict]] = None,
         win_rate: float = 0.0,
         usage_rate: float = 0.0,
         trophy_range_low: int = 0,
@@ -138,7 +150,14 @@ class DeckScraper:
         sample_size: int = 1,
     ) -> bool:
         """Insert or update a deck. Returns True if a new deck was inserted."""
-        d_hash = deck_hash(card_keys)
+        try:
+            normalized_slots = normalize_deck_slots(card_keys, deck_slots)
+        except ValueError as exc:
+            logger.warning(f"Skipping illegal deck: {exc}")
+            return False
+
+        card_keys = base_card_keys_from_slots(normalized_slots)
+        d_hash = deck_hash(card_keys, normalized_slots)
         archetype = classify_archetype(card_keys)
         avg_elixir = compute_avg_elixir(card_keys)
         now = datetime.now(timezone.utc)
@@ -146,9 +165,10 @@ class DeckScraper:
         if season is None:
             season = now.strftime("%Y-%m")
 
-        stmt = pg_insert(MetaDeck).values(
+        insert_stmt = pg_insert(MetaDeck).values(
             deck_hash=d_hash,
             card_keys=card_keys,
+            deck_slots=normalized_slots,
             archetype=archetype,
             win_rate=win_rate,
             usage_rate=usage_rate,
@@ -159,11 +179,13 @@ class DeckScraper:
             source=source,
             sample_size=sample_size,
             scraped_at=now,
-        ).on_conflict_do_update(
+        )
+        stmt = insert_stmt.on_conflict_do_update(
             index_elements=["deck_hash"],
             set_={
                 "win_rate": MetaDeck.win_rate,  # Keep existing if conflict
                 "usage_rate": MetaDeck.usage_rate,
+                "deck_slots": insert_stmt.excluded.deck_slots,
                 "sample_size": MetaDeck.sample_size + sample_size,
                 "scraped_at": now,
             },
@@ -258,6 +280,9 @@ class DeckScraper:
                 card_type="troop",  # API doesn't always distinguish, will refine
                 icon_url=card.get("icon_url", ""),
                 max_level=card.get("max_level", 14),
+                supports_evolution=card.get("supports_evolution", False),
+                supports_hero=card.get("supports_hero", False),
+                base_sc_key=card.get("base_sc_key", card["sc_key"]),
             ).on_conflict_do_update(
                 index_elements=["sc_key"],
                 set_={
@@ -265,6 +290,10 @@ class DeckScraper:
                     "elixir": card["elixir"],
                     "rarity": card["rarity"],
                     "icon_url": card.get("icon_url", ""),
+                    "max_level": card.get("max_level", 14),
+                    "supports_evolution": card.get("supports_evolution", False),
+                    "supports_hero": card.get("supports_hero", False),
+                    "base_sc_key": card.get("base_sc_key", card["sc_key"]),
                 },
             )
             await self.db.execute(stmt)
