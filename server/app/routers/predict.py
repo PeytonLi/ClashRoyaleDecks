@@ -15,6 +15,12 @@ from app.dependencies import require_existing_user_id, verify_bff_origin
 from app.ml.explainer import generate_explanation, generate_short_summary
 from app.ml.model import recommender
 from app.models import Card, Player, UserPlayer
+from app.services.deck_forms import (
+    display_card_name,
+    display_required_card,
+    normalize_deck_slots,
+    parse_card_input,
+)
 from app.services.tag_utils import build_tag_candidates, normalize_tag_input, to_hash_tag
 
 router = APIRouter()
@@ -34,8 +40,16 @@ class CardInfo(BaseModel):
     name: str
 
 
+class DeckSlotResponse(BaseModel):
+    card: str
+    card_key: str
+    form: str
+    slot_type: str
+
+
 class DeckRecommendation(BaseModel):
     cards: list[str]
+    slots: list[DeckSlotResponse] = Field(default_factory=list)
     archetype: str
     win_rate: float
     level_fit_score: float
@@ -88,13 +102,26 @@ def _card_aliases(sc_key: str, name: Optional[str] = None) -> set[str]:
 
 
 def _display_card_name(card_key: str) -> str:
-    return card_key.replace("-", " ").title()
+    return display_card_name(card_key)
+
+
+def _format_deck_slots(deck: dict) -> list[DeckSlotResponse]:
+    slots = normalize_deck_slots(deck.get("card_keys", []), deck.get("deck_slots"))
+    return [
+        DeckSlotResponse(
+            card=_display_card_name(slot["card_key"]),
+            card_key=slot["card_key"],
+            form=slot["form"],
+            slot_type=slot["slot_type"],
+        )
+        for slot in slots
+    ]
 
 
 async def resolve_required_cards(
     db: AsyncSession,
     requested_cards: list[str],
-) -> list[str]:
+) -> list[dict[str, Optional[str]]]:
     """Resolve user-entered card names into canonical card keys."""
     alias_to_key: dict[str, str] = {}
 
@@ -107,7 +134,8 @@ async def resolve_required_cards(
         for alias in _card_aliases(sc_key, name):
             alias_to_key[alias] = sc_key
 
-    resolved: list[str] = []
+    resolved: list[dict[str, Optional[str]]] = []
+    seen: set[tuple[str, Optional[str]]] = set()
     unknown: list[str] = []
 
     for raw_card in requested_cards:
@@ -115,16 +143,20 @@ async def resolve_required_cards(
         if not raw_card:
             continue
 
+        parsed = parse_card_input(raw_card)
         key = None
-        for alias in _card_aliases(raw_card):
+        for alias in _card_aliases(parsed["query"]):
             if alias in alias_to_key:
                 key = alias_to_key[alias]
                 break
 
         if key is None:
             unknown.append(raw_card)
-        elif key not in resolved:
-            resolved.append(key)
+        else:
+            resolved_key = (key, parsed["form"])
+            if resolved_key not in seen:
+                resolved.append({"card_key": key, "form": parsed["form"]})
+                seen.add(resolved_key)
 
     if unknown:
         card_list = ", ".join(unknown)
@@ -194,17 +226,20 @@ async def recommend_deck(
 
     # Run recommendation
     card_levels = player.card_levels or {}
+    special_unlocks = player.special_card_unlocks or {}
     required_cards = await resolve_required_cards(db, request.required_cards)
     results = recommender.recommend(
         player_card_levels=card_levels,
         archetype_pref=request.archetype_preference,
         required_cards=required_cards,
+        player_special_unlocks=special_unlocks,
+        player_trophies=player.trophies,
         top_k=3,
     )
 
     if not results:
         if required_cards:
-            required_display = ", ".join(_display_card_name(card) for card in required_cards)
+            required_display = ", ".join(display_required_card(card) for card in required_cards)
             raise HTTPException(
                 status_code=404,
                 detail=f"No deck recommendations available with {required_display}. Try another card or remove the optional card filter.",
@@ -233,9 +268,11 @@ async def recommend_deck(
         short = generate_short_summary(deck, scores)
 
         card_names = [_display_card_name(k) for k in deck.get("card_keys", [])]
+        deck_slots = _format_deck_slots(deck)
 
         recommendations.append(DeckRecommendation(
             cards=card_names,
+            slots=deck_slots,
             archetype=deck.get("archetype", "unknown"),
             win_rate=round(deck.get("win_rate", 0.0), 4),
             level_fit_score=round(scores.get("level_fit", 0.0), 4),
@@ -257,7 +294,7 @@ async def recommend_deck(
     return RecommendResponse(
         recommendations=recommendations,
         player_summary=player_summary,
-        required_cards=[_display_card_name(card) for card in required_cards],
+        required_cards=[display_required_card(card) for card in required_cards],
     )
 
 
@@ -281,8 +318,10 @@ async def get_meta_trends(db: AsyncSession = Depends(get_db)) -> MetaTrendsRespo
 
     for d in top_decks_rows:
         card_names = [k.replace("-", " ").title() for k in d.card_keys]
+        deck_slots = _format_deck_slots({"card_keys": d.card_keys, "deck_slots": d.deck_slots})
         top_decks.append({
             "cards": card_names,
+            "slots": [slot.model_dump() for slot in deck_slots],
             "archetype": d.archetype or "unknown",
             "win_rate": round(d.win_rate, 4),
             "usage_rate": round(d.usage_rate, 4),
