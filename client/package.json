@@ -7,15 +7,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^4.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.555.0",
-    "next": "16.0.5",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "next": "16.0.10",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -26,8 +28,9 @@
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9",
-    "eslint-config-next": "16.0.5",
+    "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.6"
   }
 }

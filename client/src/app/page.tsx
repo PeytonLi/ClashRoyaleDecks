@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth0 } from "@/lib/auth0";
 import Navbar from "../components/Navbar";
 import {
   Activity,
@@ -6,6 +7,9 @@ import {
   ChevronRight,
   Crown,
   Layers3,
+  LogIn,
+  LogOut,
+  UserPlus,
   ShieldCheck,
   Sparkles,
   Swords,
@@ -38,7 +42,9 @@ const features = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth0.getSession();
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -67,6 +73,29 @@ export default function Home() {
                 View meta board
               </Link>
             </div>
+
+            {session ? (
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <p className="text-sm font-semibold text-text-secondary">
+                  Logged in as <span className="text-text-primary">{session.user.email}</span>
+                </p>
+                <a href="/auth/logout" className="btn-secondary px-6 text-base">
+                  <LogOut className="h-5 w-5" />
+                  Logout
+                </a>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <a href="/auth/login?screen_hint=signup" className="btn-primary px-6 text-base">
+                  <UserPlus className="h-5 w-5" />
+                  Signup
+                </a>
+                <a href="/auth/login" className="btn-secondary px-6 text-base">
+                  <LogIn className="h-5 w-5" />
+                  Login
+                </a>
+              </div>
+            )}
 
             <div className="mt-8 grid max-w-xl grid-cols-3 gap-3">
               {signals.map((signal) => {
