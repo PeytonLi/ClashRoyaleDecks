@@ -16,6 +16,13 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
+vi.mock("next-auth/react", () => ({
+  useSession: () => ({
+    data: null,
+    status: "unauthenticated",
+  }),
+}));
+
 const textContent = (html: string) => html.replace(/<[^>]*>/g, "");
 
 describe("Home authentication actions", () => {

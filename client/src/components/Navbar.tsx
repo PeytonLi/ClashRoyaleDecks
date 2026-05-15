@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Activity, Menu, Swords, X } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import { Activity, LogOut, Menu, Swords, UserRound, X } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -15,6 +16,8 @@ const navLinks = [
 const Navbar = () => {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const signedIn = status === 'authenticated' && Boolean(session?.user);
 
   return (
     <nav className="bg-gradient-navbar sticky top-0 z-50 border-b border-border-subtle">
@@ -53,6 +56,27 @@ const Navbar = () => {
               <Activity className="h-4 w-4" />
               Run Scan
             </Link>
+            {signedIn ? (
+              <div className="ml-2 flex items-center gap-2">
+                <div className="hidden max-w-44 items-center gap-2 truncate rounded-[8px] border border-border-subtle bg-surface-card px-3 py-2 text-sm font-semibold text-text-secondary lg:flex">
+                  <UserRound className="h-4 w-4 shrink-0 text-brand-cyan" />
+                  <span className="truncate">{session?.user?.email || session?.user?.name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="grid h-10 w-10 place-items-center rounded-[8px] border border-border-subtle text-text-secondary transition-colors hover:bg-surface-card-hover hover:text-text-primary"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="btn-secondary ml-2 px-4 text-sm">
+                <UserRound className="h-4 w-4" />
+                Log in
+              </Link>
+            )}
           </div>
 
           <button
@@ -94,6 +118,28 @@ const Navbar = () => {
                 <Activity className="h-4 w-4" />
                 Run Scan
               </Link>
+              {signedIn ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    signOut({ callbackUrl: '/' });
+                  }}
+                  className="btn-secondary mt-2 px-4 text-sm"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-secondary mt-2 px-4 text-sm"
+                >
+                  <UserRound className="h-4 w-4" />
+                  Log in
+                </Link>
+              )}
             </div>
           </div>
         )}

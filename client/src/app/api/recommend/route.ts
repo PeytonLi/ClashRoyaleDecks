@@ -1,36 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE = process.env.FASTAPI_URL || 'http://localhost:8000';
-const BFF_SECRET = process.env.BFF_SHARED_SECRET || '';
-
-function getClientIP(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) return realIp;
-
-  return '127.0.0.1';
-}
-
-/** Headers sent to every backend call so the FastAPI BFF-origin check passes. */
-function bffHeaders(): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (BFF_SECRET) h['X-BFF-Secret'] = BFF_SECRET;
-  return h;
-}
+import { auth } from '@/auth';
+import { API_BASE, bffHeaders } from '@/lib/backend';
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIP(request);
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  const quotaKey = `user:${userId}`;
 
   // --- 1. Check quota against the persistent backend store ---
   try {
     const checkRes = await fetch(`${API_BASE}/api/usage/check`, {
       method: 'POST',
       headers: bffHeaders(),
-      body: JSON.stringify({ ip_address: ip }),
+      body: JSON.stringify({ ip_address: quotaKey }),
       cache: 'no-store',
     });
 
@@ -68,7 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     const res = await fetch(`${API_BASE}/api/predict/recommend`, {
       method: 'POST',
-      headers: bffHeaders(),
+      headers: bffHeaders(userId),
       body: JSON.stringify(body),
       cache: 'no-store',
     });
@@ -88,7 +75,7 @@ export async function POST(request: NextRequest) {
       const incRes = await fetch(`${API_BASE}/api/usage/increment`, {
         method: 'POST',
         headers: bffHeaders(),
-        body: JSON.stringify({ ip_address: ip }),
+        body: JSON.stringify({ ip_address: quotaKey }),
         cache: 'no-store',
       });
       if (incRes.ok) {

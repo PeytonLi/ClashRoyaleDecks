@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
+import RecommendationAssistant from '../../components/RecommendationAssistant';
 import { Activity, ChevronRight, Loader2, Search, SlidersHorizontal, Trophy } from 'lucide-react';
 
 const ARCHETYPES = [
@@ -17,6 +18,7 @@ const ARCHETYPES = [
 export default function RecommendPage() {
   const router = useRouter();
   const [playerTag, setPlayerTag] = useState('');
+  const [requiredCard, setRequiredCard] = useState('');
   const [archetype, setArchetype] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +46,8 @@ export default function RecommendPage() {
       const resolvedTag = String(playerData.tag || `#${cleanTag}`).replace(/^#/, '');
       const params = new URLSearchParams({ tag: resolvedTag });
       if (archetype) params.set('archetype', archetype);
+      const cleanRequiredCard = requiredCard.trim();
+      if (cleanRequiredCard) params.set('required_card', cleanRequiredCard);
       router.push(`/results?${params.toString()}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
@@ -122,6 +126,21 @@ export default function RecommendPage() {
             </div>
 
             <div>
+              <label htmlFor="required-card" className="mb-2 block text-sm font-bold text-text-secondary">
+                Optional Card
+              </label>
+              <input
+                id="required-card"
+                type="text"
+                value={requiredCard}
+                onChange={(e) => setRequiredCard(e.target.value)}
+                placeholder="Hog Rider"
+                className="input-field"
+                autoComplete="off"
+              />
+            </div>
+
+            <div>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <label className="text-sm font-bold text-text-secondary">Archetype Preference</label>
                 <SlidersHorizontal className="h-4 w-4 text-text-muted" />
@@ -171,6 +190,10 @@ export default function RecommendPage() {
               )}
             </button>
           </form>
+
+          <div className="mt-6 border-t border-border-subtle pt-6">
+            <RecommendationAssistant />
+          </div>
         </section>
       </main>
     </div>
