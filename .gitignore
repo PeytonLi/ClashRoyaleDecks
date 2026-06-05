@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Node / Next.js
+node_modules/
 client/node_modules/
 client/.next/
 client/out/
@@ -44,6 +45,9 @@ server/app/ml/artifacts/*.pkl
 .idea/
 *.swp
 *.swo
+
+# Turborepo
+.turbo/
 
 # AI Agent folders
 .claude/

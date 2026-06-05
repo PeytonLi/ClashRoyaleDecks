@@ -3,13 +3,28 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
-    "dev": "pnpm run dev:install && pnpm run dev:services && pnpm --dir client dev",
-    "dev:install": "pnpm --dir client install",
-    "dev:client": "pnpm --dir client dev",
+    "dev": "turbo dev",
     "dev:services": "docker compose up -d --build",
     "dev:logs": "docker compose logs -f api db",
     "dev:stop": "docker compose down",
-    "build": "pnpm --dir client build",
-    "lint": "pnpm --dir client lint"
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ],
+    "overrides": {
+      "@assistant-ui/store": "0.2.9",
+      "@assistant-ui/tap": "0.5.10",
+      "@assistant-ui/react-ai-sdk": "1.3.21",
+      "assistant-cloud": "0.1.27",
+      "zustand": "5.0.13"
+    }
   }
 }
