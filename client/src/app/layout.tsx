@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthProvider from "../components/AuthProvider";
+import AuroraBackground from "../components/AuroraBackground";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AuroraBackground>{children}</AuroraBackground>
+        </AuthProvider>
       </body>
     </html>
   );

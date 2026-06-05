@@ -1,6 +1,5 @@
 import Navbar from "../../components/Navbar";
 import UnifiedAuthForm from "./UnifiedAuthForm";
-import LoginBackground from "./LoginBackground";
 
 export default async function LoginPage({
   searchParams,
@@ -16,7 +15,7 @@ export default async function LoginPage({
   );
 
   return (
-    <LoginBackground>
+    <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="page-frame flex grow items-center justify-center py-10">
         <UnifiedAuthForm
@@ -24,6 +23,6 @@ export default async function LoginPage({
           googleEnabled={googleEnabled}
         />
       </main>
-    </LoginBackground>
+    </div>
   );
 }
