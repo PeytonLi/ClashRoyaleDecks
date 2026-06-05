@@ -84,38 +84,39 @@ export default function UnifiedAuthForm({
   };
 
   return (
-    <section className="arena-panel w-full max-w-md p-6 sm:p-8">
-      <div className="mb-7 text-center">
-        <div className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-xl border border-border-subtle bg-surface-card">
-          <ShieldCheck className="h-6 w-6 text-brand-gold" />
+    <section className="login-panel w-full max-w-md p-7 sm:p-9">
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
+          <ShieldCheck className="h-6 w-6 text-brand-blue" />
         </div>
-        <h1 className="font-display text-2xl font-bold text-text-primary sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
           {isSignIn ? "Welcome back" : "Create your account"}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">
+        <p className="mt-2 text-sm leading-6 text-slate-400">
           {isSignIn
             ? "Sign in to access your decks, quota, and linked profiles."
             : "Save your recommendations and link player profiles to your account."}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {!isSignIn && (
           <div>
             <label
               htmlFor="name"
-              className="mb-2 block text-sm font-bold text-text-secondary"
+              className="mb-2 block text-sm font-semibold text-slate-300"
             >
               Name
             </label>
             <div className="relative">
-              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <User className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="input-field pl-10"
+                className="input-login"
+                style={{ padding: "0.8rem 1rem 0.8rem 2.75rem" }}
                 autoComplete="name"
                 placeholder="Your name"
               />
@@ -126,18 +127,19 @@ export default function UnifiedAuthForm({
         <div>
           <label
             htmlFor="email"
-            className="mb-2 block text-sm font-bold text-text-secondary"
+            className="mb-2 block text-sm font-semibold text-slate-300"
           >
             Email
           </label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-field pl-10"
+              className="input-login"
+              style={{ padding: "0.8rem 1rem 0.8rem 2.75rem" }}
               autoComplete="email"
               placeholder="you@example.com"
               required
@@ -148,18 +150,19 @@ export default function UnifiedAuthForm({
         <div>
           <label
             htmlFor="password"
-            className="mb-2 block text-sm font-bold text-text-secondary"
+            className="mb-2 block text-sm font-semibold text-slate-300"
           >
             Password
           </label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field pl-10"
+              className="input-login"
+              style={{ padding: "0.8rem 1rem 0.8rem 2.75rem" }}
               autoComplete={isSignIn ? "current-password" : "new-password"}
               placeholder={isSignIn ? "Your password" : "At least 8 characters"}
               minLength={isSignIn ? undefined : 8}
@@ -169,7 +172,7 @@ export default function UnifiedAuthForm({
         </div>
 
         {error && (
-          <div className="rounded-lg border border-border-accent bg-brand-red/10 px-4 py-3 text-sm font-semibold text-[#ff9c9c]">
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">
             {error}
           </div>
         )}
@@ -177,7 +180,7 @@ export default function UnifiedAuthForm({
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary min-h-12 w-full px-5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-login inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -195,16 +198,16 @@ export default function UnifiedAuthForm({
 
       {googleEnabled && (
         <>
-          <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-text-muted">
-            <span className="h-px flex-1 bg-border-subtle" />
+          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-slate-600">
+            <span className="h-px flex-1 bg-white/8" />
             or
-            <span className="h-px flex-1 bg-border-subtle" />
+            <span className="h-px flex-1 bg-white/8" />
           </div>
 
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="btn-secondary w-full min-h-12 gap-3 px-4 text-sm font-bold"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 text-sm font-semibold text-slate-200 transition-all hover:border-blue-500/30 hover:bg-white/8"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -229,12 +232,12 @@ export default function UnifiedAuthForm({
         </>
       )}
 
-      <p className="mt-6 text-center text-sm text-text-secondary">
+      <p className="mt-6 text-center text-sm text-slate-400">
         {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
         <button
           type="button"
           onClick={toggleMode}
-          className="font-bold text-brand-gold transition-colors hover:text-brand-cyan"
+          className="font-bold text-brand-blue transition-colors hover:text-blue-300"
         >
           {isSignIn ? "Sign up" : "Sign in"}
         </button>
@@ -243,7 +246,7 @@ export default function UnifiedAuthForm({
       <p className="mt-3 text-center">
         <Link
           href="/"
-          className="text-xs font-medium text-text-muted transition-colors hover:text-text-secondary"
+          className="text-xs font-medium text-slate-600 transition-colors hover:text-slate-400"
         >
           Back to home
         </Link>
