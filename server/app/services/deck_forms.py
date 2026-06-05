@@ -11,7 +11,6 @@ from __future__ import annotations
 import re
 from typing import Any, Optional, TypedDict
 
-
 FORM_BASE = "base"
 FORM_EVOLUTION = "evolution"
 FORM_HERO = "hero"
@@ -51,6 +50,27 @@ def card_key_from_name(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
 
 
+def card_search_aliases(sc_key: str, name: Optional[str] = None) -> set[str]:
+    """Generate all searchable aliases for fuzzy card-name matching.
+
+    Produces variants: lowercase, slug, slug-with-spaces, compact.
+    Callers can use these to build lookup tables for user-entered card names.
+    """
+    values = {sc_key}
+    if name:
+        values.add(name)
+
+    aliases: set[str] = set()
+    for value in values:
+        clean = value.strip().lower()
+        if not clean:
+            continue
+        slug = card_key_from_name(clean)
+        compact = re.sub(r"[^a-z0-9]", "", clean)
+        aliases.update({clean, slug, slug.replace("-", " "), compact})
+    return aliases
+
+
 def display_card_name(card_key: str) -> str:
     """Convert a canonical card key into a human-readable display name."""
     return card_key.replace("-", " ").title()
@@ -83,7 +103,9 @@ def parse_card_input(value: str) -> ParsedCardInput:
     )
     if suffix_match:
         rest, suffix = suffix_match.groups()
-        form = FORM_EVOLUTION if suffix in {"evolution", "evo", "evolved"} else FORM_HERO
+        form = (
+            FORM_EVOLUTION if suffix in {"evolution", "evo", "evolved"} else FORM_HERO
+        )
         return {"query": rest.strip(), "form": form}
 
     return {"query": raw, "form": None}
@@ -92,7 +114,11 @@ def parse_card_input(value: str) -> ParsedCardInput:
 def make_base_slots(card_keys: list[str]) -> list[DeckSlot]:
     """Build normal slots for an old-style 8-card deck."""
     return [
-        {"card_key": card_key_from_name(card_key), "form": FORM_BASE, "slot_type": SLOT_NORMAL}
+        {
+            "card_key": card_key_from_name(card_key),
+            "form": FORM_BASE,
+            "slot_type": SLOT_NORMAL,
+        }
         for card_key in card_keys
     ]
 
@@ -126,7 +152,9 @@ def assign_slot_types(slots: list[DeckSlot]) -> list[DeckSlot]:
     - plus 1 Wild holding one additional Evolution, Hero, or Champion
     """
     normalized = [{**slot, "slot_type": SLOT_NORMAL} for slot in slots]
-    evolution_indices = [idx for idx, slot in enumerate(normalized) if slot["form"] == FORM_EVOLUTION]
+    evolution_indices = [
+        idx for idx, slot in enumerate(normalized) if slot["form"] == FORM_EVOLUTION
+    ]
     hero_like_indices = [
         idx
         for idx, slot in enumerate(normalized)
@@ -255,7 +283,11 @@ def extract_special_unlocks(cards: list[dict[str, Any]]) -> dict[str, list[str]]
 
         if int_from_api(card.get("evolutionLevel")) > 0:
             unlocks["evolutions"].append(card_key)
-        if parsed_form == FORM_HERO or rarity == FORM_HERO or int_from_api(card.get("heroLevel")) > 0:
+        if (
+            parsed_form == FORM_HERO
+            or rarity == FORM_HERO
+            or int_from_api(card.get("heroLevel")) > 0
+        ):
             unlocks["heroes"].append(card_key)
         if parsed_form == FORM_CHAMPION or rarity == FORM_CHAMPION:
             unlocks["champions"].append(card_key)
@@ -263,7 +295,9 @@ def extract_special_unlocks(cards: list[dict[str, Any]]) -> dict[str, list[str]]
     return normalize_special_unlocks(unlocks)
 
 
-def normalize_special_unlocks(unlocks: Optional[dict[str, Any]]) -> dict[str, list[str]]:
+def normalize_special_unlocks(
+    unlocks: Optional[dict[str, Any]],
+) -> dict[str, list[str]]:
     normalized = {"evolutions": [], "heroes": [], "champions": []}
     if not unlocks:
         return normalized
@@ -288,7 +322,10 @@ def slot_is_unlocked(
     if form == FORM_BASE:
         return True
 
-    if slot["slot_type"] == SLOT_EVOLUTION and player_trophies < EVOLUTION_SLOT_TROPHIES:
+    if (
+        slot["slot_type"] == SLOT_EVOLUTION
+        and player_trophies < EVOLUTION_SLOT_TROPHIES
+    ):
         return False
     if slot["slot_type"] == SLOT_HERO and player_trophies < HERO_SLOT_TROPHIES:
         return False
@@ -318,13 +355,17 @@ def deck_is_playable(
     return all(slot_is_unlocked(slot, unlocks, player_trophies) for slot in slots)
 
 
-def normalize_required_card_specs(required_cards: Optional[list[Any]]) -> list[RequiredCardSpec]:
+def normalize_required_card_specs(
+    required_cards: Optional[list[Any]],
+) -> list[RequiredCardSpec]:
     specs: list[RequiredCardSpec] = []
     seen: set[tuple[str, Optional[str]]] = set()
 
     for item in required_cards or []:
         if isinstance(item, dict):
-            card_key = card_key_from_name(str(item.get("card_key") or item.get("key") or ""))
+            card_key = card_key_from_name(
+                str(item.get("card_key") or item.get("key") or "")
+            )
             form = item.get("form")
             form = _normalize_form(form) if form else None
         else:

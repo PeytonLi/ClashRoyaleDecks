@@ -1,11 +1,10 @@
 from contextlib import asynccontextmanager
 
+from app.data.scheduler import start_scheduler, stop_scheduler
+from app.database import close_db, init_db
+from app.routers import auth, players, predict, usage
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.database import close_db, init_db
-from app.data.scheduler import start_scheduler, stop_scheduler
-from app.routers import auth, decks, players, predict, usage
 
 
 @asynccontextmanager
@@ -17,6 +16,7 @@ async def lifespan(app: FastAPI):
 
     # Try to load pre-trained model
     from app.ml.model import recommender
+
     recommender.load()
 
     yield
@@ -57,7 +57,7 @@ async def health_check():
 
 
 # Include routers
-app.include_router(decks.router, prefix="/api/decks", tags=["decks"])
+
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(predict.router, prefix="/api/predict", tags=["predictions"])
 app.include_router(players.router, prefix="/api/players", tags=["players"])
