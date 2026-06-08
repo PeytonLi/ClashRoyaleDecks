@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import BackgroundIcons from "./BackgroundIcons";
 
 export default function AuroraBackground({ children }: { children: ReactNode }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -96,6 +97,8 @@ export default function AuroraBackground({ children }: { children: ReactNode }) 
 
   return (
     <div ref={wrapRef}>
+      <BackgroundIcons />
+
       {/* Blue aurora blob */}
       <div
         ref={blueBlobRef}

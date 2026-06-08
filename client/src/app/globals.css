@@ -67,26 +67,6 @@ p {
     overflow-wrap: break-word;
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-        linear-gradient(rgba(255, 248, 232, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 248, 232, 0.03) 1px, transparent 1px),
-        repeating-linear-gradient(
-            135deg,
-            transparent 0 34px,
-            rgba(245, 181, 63, 0.045) 34px 35px
-        );
-    background-size:
-        56px 56px,
-        56px 56px,
-        100% 100%;
-    mask-image: linear-gradient(to bottom, black, black 64%, transparent);
-}
 
 button,
 input,
