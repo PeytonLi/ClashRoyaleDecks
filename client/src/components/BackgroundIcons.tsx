@@ -39,7 +39,7 @@ function drawCrown(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.shadowColor = "rgba(245,181,63,0.5)";
-  ctx.shadowBlur = size * 0.5;
+  ctx.shadowBlur = size * 0.3;
   ctx.strokeStyle = "#f5b53f";
 
   const w = size * 0.9;
@@ -96,7 +96,7 @@ function drawSword(
   ctx.lineCap = "round";
   ctx.strokeStyle = "#4f8ef7";
   ctx.shadowColor = "rgba(79,142,247,0.5)";
-  ctx.shadowBlur = size * 0.5;
+  ctx.shadowBlur = size * 0.3;
 
   const h = size;
 
@@ -148,7 +148,7 @@ export default function BackgroundIcons() {
     if (!ctx) return;
 
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mql.matches) return;
+    const prefersReduced = mql.matches;
 
     // Deterministic icon layout
     const rand = seeded(137);
@@ -156,8 +156,8 @@ export default function BackgroundIcons() {
       type: rand() > 0.48 ? "crown" : "sword",
       x: rand(),
       y: rand(),
-      size: 11 + rand() * 17,
-      opacity: 0.045 + rand() * 0.085,
+      size: 13 + rand() * 18,
+      opacity: 0.10 + rand() * 0.16,
       angle: rand() * Math.PI * 2,
       depth: 0.15 + rand() * 0.85,
       phaseX: rand() * Math.PI * 2,
@@ -168,18 +168,42 @@ export default function BackgroundIcons() {
       ampY: 8 + rand() * 22,
     }));
 
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+
+    // Shared render function — draws all icons for a given time + mouse offset
+    const render = (now: number, offX = 0, offY = 0) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const icon of icons) {
+        const dx = Math.sin(now * icon.freqX + icon.phaseX) * icon.ampX;
+        const dy = Math.cos(now * icon.freqY + icon.phaseY) * icon.ampY;
+        const px = icon.x * canvas.width  + dx + offX * icon.depth * 45;
+        const py = icon.y * canvas.height + dy + offY * icon.depth * 45;
+        if (icon.type === "crown") {
+          drawCrown(ctx, px, py, icon.size, icon.opacity);
+        } else {
+          drawSword(ctx, px, py, icon.size, icon.opacity, icon.angle);
+        }
+      }
+    };
+
+    // Reduced-motion: render one static frame, no rAF loop
+    if (prefersReduced) {
+      render(0);
+      const onResize = () => { resize(); render(0); };
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
+
     let mx = window.innerWidth / 2;
     let my = window.innerHeight / 2;
     let smx = mx;
     let smy = my;
     let rafId = 0;
     let cancelled = false;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
 
     const onResize = () => resize();
     const onMove = (e: MouseEvent) => { mx = e.clientX; my = e.clientY; };
@@ -189,28 +213,11 @@ export default function BackgroundIcons() {
 
     const tick = (now: number) => {
       if (cancelled) return;
-
       smx += (mx - smx) * 0.04;
       smy += (my - smy) * 0.04;
-
       const offX = (smx / window.innerWidth  - 0.5) * 2;
       const offY = (smy / window.innerHeight - 0.5) * 2;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      for (const icon of icons) {
-        const dx = Math.sin(now * icon.freqX + icon.phaseX) * icon.ampX;
-        const dy = Math.cos(now * icon.freqY + icon.phaseY) * icon.ampY;
-        const px = icon.x * canvas.width  + dx + offX * icon.depth * 45;
-        const py = icon.y * canvas.height + dy + offY * icon.depth * 45;
-
-        if (icon.type === "crown") {
-          drawCrown(ctx, px, py, icon.size, icon.opacity);
-        } else {
-          drawSword(ctx, px, py, icon.size, icon.opacity, icon.angle);
-        }
-      }
-
+      render(now, offX, offY);
       rafId = requestAnimationFrame(tick);
     };
 

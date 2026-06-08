@@ -135,7 +135,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="arena-panel p-4 sm:p-6 lg:p-8">
+          <div className="liquid-glass liquid-glass-sheen p-4 sm:p-6 lg:p-8">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="font-display text-sm uppercase tracking-[0.16em] text-brand-gold">
@@ -187,7 +187,7 @@ export default async function Home() {
               return (
                 <article
                   key={feature.title}
-                  className={`glass-card p-5 animate-fade-in-up-delay-${index + 1}`}
+                  className={`liquid-glass p-5 animate-fade-in-up-delay-${index + 1}`}
                 >
                   <Icon className="mb-5 h-6 w-6 text-brand-cyan" />
                   <h2 className="font-display text-xl font-bold text-text-primary">

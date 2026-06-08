@@ -152,6 +152,50 @@ select {
     );
 }
 
+.liquid-glass {
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.10),
+            rgba(255, 255, 255, 0.02) 55%
+        ),
+        rgba(18, 20, 28, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    transition:
+        border-color 180ms ease,
+        transform 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.liquid-glass:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+    box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Sweeping specular sheen across the top edge */
+.liquid-glass-sheen::before {
+    content: "";
+    position: absolute;
+    inset: -1px -1px auto -1px;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent);
+    pointer-events: none;
+    z-index: 1;
+}
+
 .bg-gradient-hero {
     background: linear-gradient(
         135deg,
